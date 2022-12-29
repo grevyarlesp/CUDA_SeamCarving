@@ -1,0 +1,5 @@
+# Seam carving
+
+Tasks:
+
+- 
