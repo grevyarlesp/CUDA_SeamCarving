@@ -92,6 +92,7 @@ pip-delete-this-directory.txt
 
 
 .cache/*
+.cache/clangd/
 .cache/
 
 htmlcov/
