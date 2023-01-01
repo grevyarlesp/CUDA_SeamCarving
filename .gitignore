@@ -274,3 +274,4 @@ out*.pnm
 
 *.zip
 *.rar
+bin/
