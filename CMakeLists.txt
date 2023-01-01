@@ -11,6 +11,8 @@ set(EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
 
 set(CMAKE_CUDA_ARCHITECTURES ${CC})
 
+message("Compiling for architecture ${CMAKE_CUDA_ARCHITECTURES}")
+
 include_directories(
         ${PROJECT_SOURCE_DIR}/include
 )
@@ -32,7 +34,7 @@ file(GLOB test_SRCS
 
 
 add_executable(SeamCarving ${all_SRCS} ${PROJECT_SOURCE_DIR}/src/main.cu)
-set_property(TARGET SeamCarving PROPERTY CUDA_ARCHITECTURES ${CC})
+set_target_properties(SeamCarving PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(conv_test ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/conv_tests.cu)
-set_property(TARGET conv_test PROPERTY CUDA_ARCHITECTURES ${CC})
+set_target_properties(conv_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
