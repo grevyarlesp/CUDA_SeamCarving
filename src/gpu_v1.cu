@@ -6,6 +6,10 @@ const int SOBEL_X[] = {
 
 const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
+__global__ void V1_conv_kernel(int *in, int n, int m, int *out) {
+
+}
+
 void V1_conv(int *in, int n, int m, int *out) {
 
 
