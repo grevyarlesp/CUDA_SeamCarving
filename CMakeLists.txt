@@ -8,12 +8,8 @@ set(CMAKE_INCLUDE_HEADERS_IN_COMPILE_COMMANDS YES)
 
 set(EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
 
-set(
-    CUDA_NVCC_FLAGS
-    ${CUDA_NVCC_FLAGS};
-   arch=sm_72
-    )
 
+set(CMAKE_CUDA_ARCHITECTURES ${CC})
 
 include_directories(
         ${PROJECT_SOURCE_DIR}/include

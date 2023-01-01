@@ -1,4 +1,4 @@
-#include "gpu_timer.h"
+#include "gpu_utils.h"
 #include "host.h"
 #include <stdio.h>
 #include "gpu_v1.h"

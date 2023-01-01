@@ -1,7 +1,8 @@
 #include "host.h"
-#include "gpu_timer.h"
+#include "gpu_utils.h"
 
 int main() {
+	printDeviceInfo();
   
 
 }

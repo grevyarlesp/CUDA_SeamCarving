@@ -43,5 +43,7 @@ struct GpuTimer {
   }
 };
 
+void printDeviceInfo();
 
 #endif
+
