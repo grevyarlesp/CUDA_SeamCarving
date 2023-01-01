@@ -89,12 +89,16 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+
+
+.cache/*
+.cache/
+
 htmlcov/
 .tox/
 .nox/
 .coverage
 .coverage.*
-.cache
 nosetests.xml
 coverage.xml
 *.cover
@@ -268,6 +272,7 @@ tags
 !/**/
 !*.*
 *.out
+cached/
 
 out*.pnm
 !out*-target.pnm
@@ -301,4 +306,3 @@ _deps
 *-prefix/
 
 # End of https://www.toptal.com/developers/gitignore/api/cmake
-

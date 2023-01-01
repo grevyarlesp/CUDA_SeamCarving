@@ -1,0 +1,9 @@
+CompileFlags:
+  Remove:
+    - -forward-unknown-to-host-compiler
+    - --options-file
+    - --generate-code*
+    - -rdc*
+
+  Add: 
+    - "--include-directory=include/"
