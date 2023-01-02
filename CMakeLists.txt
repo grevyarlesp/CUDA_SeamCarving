@@ -7,6 +7,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS YES)
 set(CMAKE_INCLUDE_HEADERS_IN_COMPILE_COMMANDS YES)
 
 set(EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
+set(CMAKE_CUDA_FLAGS "-Wall -Wextra")
+
 
 set(CMAKE_CUDA_ARCHITECTURES ${CC})
 
@@ -16,9 +18,9 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/include
 )
 
-file(GLOB HEADERS
-			"${PROJECT_SOURCE_DIR}/include"
-	)
+link_directories(
+      ${PROJECT_SOURCE_DIR}/src
+  )
 
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.cu"

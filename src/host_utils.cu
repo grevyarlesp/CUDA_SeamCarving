@@ -3,19 +3,30 @@
 
 using namespace std;
 
-bool check_answer(int *act, int *expected, int n, int ncase=-1) {
+bool check_answer(int *act, int *expected, int n, int ncase) {
   cout << "Case " << ncase << '\n';
+  bool b = true;
 
   for (int i = 0; i < n; ++i) {
     if (act[i] != expected[i]) {
-      cout << "Wrong answer\n";
-      cout << "Dfif at " << i << ", got " << act[i] << ' ' << expected[i] << '\n';
-      return false;
+      b = false;
+      break;
     }
+  }
+
+  if (!b) {
+    cout << "Actual = \n";
+    for (int i = 0; i < n; ++i) {
+      cout << act[i] << ' ';
+    }
+    cout << '\n';
+    cout << "Expected = \n";
+    for (int i = 0; i < n; ++i) {
+      cout << expected[i] << ' ';
+    }
+    return false;
   }
 
   cout << "CORRECT\n";
   return true;
 }
-
-

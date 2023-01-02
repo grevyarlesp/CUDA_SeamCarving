@@ -71,7 +71,7 @@ void host_dp_seam(int *in, int n, int m, int *out) {
 
   // tracing back
   vector<int> ans;
-  int pos = (int) (max_element(dp[n - 1].begin(), dp[n - 1].end()) - dp[n - 1].begin());
+  int pos = (int) (min_element(dp[n - 1].begin(), dp[n - 1].end()) - dp[n - 1].begin());
 
   for (int i = n - 1; i >= 0; --i) {
     out[i] = pos;
