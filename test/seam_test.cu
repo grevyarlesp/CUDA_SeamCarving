@@ -13,7 +13,7 @@ Output: Seam
 
 vector<pair<int, int>> dat_sz = {
   {4, 6}, 
-  {5, 5}, 
+  {5, 6}, 
   {10, 5}};
 
 vector<vector<int> > dat = {

@@ -12,4 +12,5 @@ __global__ void V1_conv_kernel(int *in, int n, int m, int *out) {
 
 void V1_conv(int *in, int n, int m, int *out) {
 
+
 }
