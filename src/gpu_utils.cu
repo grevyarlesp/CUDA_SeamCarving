@@ -17,5 +17,3 @@ void printDeviceInfo() {
 
   printf("****************************\n");
 }
-
-

@@ -18,8 +18,7 @@
 
 # Compiled Dynamic libraries
 *.so
-*.dylib
-*.dll
+*.dylib *.dll
 
 # Fortran module files
 *.mod
@@ -307,3 +306,5 @@ _deps
 *-prefix/
 
 # End of https://www.toptal.com/developers/gitignore/api/cmake
+
+*.idx
