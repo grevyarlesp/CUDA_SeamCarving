@@ -1,7 +1,7 @@
+#include <algorithm>
 #include <math.h>
 #include <stdio.h>
 #include <vector>
-#include <algorithm>
 
 using namespace std;
 
@@ -48,9 +48,9 @@ Output: Seam: 1D array of n elemenets, indicate the pixel for each row
    */
 void host_dp_seam(int *in, int n, int m, int *out) {
   const int INF = 1e9;
-  vector< vector<int> > dp(n, vector<int>(m, INF));
-  vector< vector<int> > trace(n, vector<int>(m, -1));
-  
+  vector<vector<int>> dp(n, vector<int>(m, INF));
+  vector<vector<int>> trace(n, vector<int>(m, -1));
+
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < m; ++j) {
       if (i == 0) {
@@ -59,7 +59,8 @@ void host_dp_seam(int *in, int n, int m, int *out) {
       }
       for (int k = -1; k <= 1; ++k) {
         int prev_col = j + k;
-        if (prev_col < 0 || prev_col >= m) continue;
+        if (prev_col < 0 || prev_col >= m)
+          continue;
         if (dp[i - 1][prev_col] < dp[i][j]) {
           dp[i][j] = dp[i - 1][prev_col];
           trace[i][j] = prev_col;
@@ -71,7 +72,8 @@ void host_dp_seam(int *in, int n, int m, int *out) {
 
   // tracing back
   vector<int> ans;
-  int pos = (int) (min_element(dp[n - 1].begin(), dp[n - 1].end()) - dp[n - 1].begin());
+  int pos = (int)(min_element(dp[n - 1].begin(), dp[n - 1].end()) -
+                  dp[n - 1].begin());
 
   for (int i = n - 1; i >= 0; --i) {
     out[i] = pos;
@@ -79,10 +81,6 @@ void host_dp_seam(int *in, int n, int m, int *out) {
       pos = trace[i][pos];
     }
   }
-
 }
 
-void host_full(int *in, int n, int m, int *out) {
-
-  return;
-}
+void host_full(int *in, int n, int m, int *out) { return; }

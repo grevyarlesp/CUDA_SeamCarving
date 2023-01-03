@@ -58,6 +58,10 @@ Output: result + time
 */
 double V1_seam(int *in, int n, int m, int *out, int blocksize) {
 
+
+  GpuTimer timer;
+  timer.Start();
+
   dim3 grid_size((m - 1) / blocksize + 1);
   dim3 block_size(blocksize);
 
@@ -75,6 +79,7 @@ double V1_seam(int *in, int n, int m, int *out, int blocksize) {
   for (int i = 0; i < n; ++i) {
     V1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, i, m);
     CHECK(cudaDeviceSynchronize());
+    CHECK(cudaGetLastError());
   }
 
   // trace back
@@ -97,14 +102,15 @@ double V1_seam(int *in, int n, int m, int *out, int blocksize) {
   CHECK(cudaFree(d_dp));
   CHECK(cudaFree(d_trace));
 
-  return 0.0;
+  timer.Stop();
+  return timer.Elapsed();
 }
 
-__global__ void seam_removal_kernel() {
+__global__ void V1_seam_removal_kernel() {
 
 }
 
-__global__ void seam_add_kernel() {
+__global__ void V1_seam_add_kernel() {
 
 
 }
