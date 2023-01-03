@@ -15,9 +15,7 @@ __global__ void V1_conv_kernel(int *in, int n, int m, int *out) {}
 void V1_conv(int *in, int n, int m, int *out) {}
 
 
-__global__ void V1_grayscale_kernel(uint8_t *d_in, int height, int width, int *out) {
-
-
+__global__ void V1_grayscale_kernel(unsigned char* d_in, int height, int width, int *out) {
   int r = blockDim.x * blockIdx.x + threadIdx.x;
   int c = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -69,44 +67,44 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int row,
 Input: n * m energy map
 Output: result + time
 */
-double V1_seam(int *in, int n, int m, int *out, int blocksize) {
+double V1_seam(int *in, int height, int width, int *out, int blocksize) {
 
   GpuTimer timer;
   timer.Start();
 
-  dim3 grid_size((m - 1) / blocksize + 1);
+  dim3 grid_size((width - 1) / blocksize + 1);
   dim3 block_size(blocksize);
 
   int *d_in;
-  CHECK(cudaMalloc(&d_in, n * m * sizeof(int)));
-  CHECK(cudaMemcpy(d_in, in, n * m * sizeof(int), cudaMemcpyHostToDevice));
+  CHECK(cudaMalloc(&d_in, height * width * sizeof(int)));
+  CHECK(cudaMemcpy(d_in, in, height * width * sizeof(int), cudaMemcpyHostToDevice));
 
   int *d_dp;
-  CHECK(cudaMalloc(&d_dp, n * m * sizeof(int)));
+  CHECK(cudaMalloc(&d_dp, height * width * sizeof(int)));
 
   int *d_trace;
-  CHECK(cudaMalloc(&d_trace, n * m * sizeof(int)));
+  CHECK(cudaMalloc(&d_trace, height * width * sizeof(int)));
 
-  for (int i = 0; i < n; ++i) {
-    V1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, i, m);
+  for (int i = 0; i < height; ++i) {
+    V1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, i, width);
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
   }
 
   // trace back
-  int *trace = new int[n * m];
+  int *trace = new int[height * width];
 
   CHECK(
-      cudaMemcpy(trace, d_trace, n * m * sizeof(int), cudaMemcpyDeviceToHost));
+      cudaMemcpy(trace, d_trace, height * width * sizeof(int), cudaMemcpyDeviceToHost));
 
-  int pos = (int)(std::min_element(trace + (n - 1) * m, trace + n * m) -
-                  (trace + (n - 1)));
+  int pos = (int)(std::min_element(trace + (height - 1) * width, trace + height * width) -
+                  (trace + (height - 1)));
 
-  for (int i = n - 1; i >= 0; --i) {
+  for (int i = height - 1; i >= 0; --i) {
     out[i] = pos;
 
     if (i > 0)
-      pos = trace[i * m + pos];
+      pos = trace[i * width + pos];
   }
 
   delete[] trace;

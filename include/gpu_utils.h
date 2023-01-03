@@ -1,7 +1,7 @@
-#ifndef GPU_TIMER_H
-#define GPU_TIMER_H
+#ifndef GPU_UTILS_H
+#define GPU_UTILS_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #define CHECK(call)                                                            \
   {                                                                            \
@@ -10,7 +10,7 @@
       fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__);                   \
       fprintf(stderr, "code: %d, reason: %s\n", error,                         \
               cudaGetErrorString(error));                                      \
-      exit(1);                                                                 \
+      exit(1);                                                                  \
     }                                                                          \
   }
 
@@ -46,4 +46,3 @@ struct GpuTimer {
 void printDeviceInfo();
 
 #endif
-
