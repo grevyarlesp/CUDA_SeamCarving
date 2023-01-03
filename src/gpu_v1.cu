@@ -56,6 +56,10 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
       continue;
 
     int tmp = d_dp[(row - 1) * width + col_];
+
+#ifdef DEBUG
+  printf("%d %d %d\n", row, col, d_dp[(row - 1)* width + col_]);
+#endif
     if (ans == -1 || tmp < ans) {
       ans = tmp;
     }
