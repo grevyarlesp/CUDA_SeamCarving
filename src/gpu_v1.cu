@@ -62,6 +62,11 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
   }
 
   d_trace[row * width + col] = tr;
+  
+#ifdef DEBUG 
+  printf("%d %d %d\n", row, col, d_in[row * width + col]);
+#endif
+
   d_dp[row * width + col] = ans + d_in[row * width + col];
 }
 
@@ -72,7 +77,8 @@ Output: result + time
 double V1_seam(int *in, int height, int width, int *out, int blocksize) {
 
 #ifdef DEBUG 
-  cerr << "DEBUG for V1_seam" << '\n';
+  cerr << "==================================\n";
+  cerr << "Debug for V1_seam" << '\n';
   cerr << "==================================\n";
 #endif
 
