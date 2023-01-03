@@ -2,6 +2,10 @@
 
 
 
+int energy_map() {
+  
+}
+
 int main() {
   
 }
