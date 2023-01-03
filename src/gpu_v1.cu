@@ -57,9 +57,7 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 
     int tmp = d_dp[(row - 1) * width + col_];
 
-#ifdef DEBUG
-  printf("DP %d %d %d\n", row, col, d_dp[(row - 1)* width + col_]);
-#endif
+
     if (ans == -1 || tmp < ans) {
       ans = tmp;
     }
@@ -72,6 +70,9 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 #endif
 
   d_dp[row * width + col] = ans + d_in[row * width + col];
+#ifdef DEBUG
+  printf("DP %d %d %d\n", row, col, d_dp[row * width + col]);
+#endif
 }
 
 /*
