@@ -4,7 +4,6 @@
 using namespace std;
 
 bool check_answer(int *act, int *expected, int n, int ncase) {
-  cout << "Case " << ncase << '\n';
   bool b = true;
 
   for (int i = 0; i < n; ++i) {

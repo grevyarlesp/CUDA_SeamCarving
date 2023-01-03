@@ -28,6 +28,7 @@ vector<vector<int>> ans = {{2, 1, 2, 2}, {1, 2, 1, 2, 2}};
 
 void host_test() {
   for (size_t i = 0; i < dat.size(); ++i) {
+    cout << "Case " << i << '\n';
     vector<int> &V = dat[i];
 
     pair<int, int> s = dat_sz[i];
@@ -43,6 +44,8 @@ void host_test() {
 void gpu_test(int ver = 1) {
   if (ver == 1) {
     for (size_t i = 0; i < dat.size(); ++i) {
+
+      cout << "Case " << i << '\n';
       vector<int> &V = dat[i];
 
       pair<int, int> s = dat_sz[i];
