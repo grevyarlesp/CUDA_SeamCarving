@@ -30,5 +30,8 @@ int main(int argc, char **argv) {
 
     cout << "Loaded image with size of " << width << "x" << height
          << " channels " << channels << '\n';
+
+
+
   }
 }
