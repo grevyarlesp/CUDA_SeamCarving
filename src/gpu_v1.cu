@@ -13,6 +13,7 @@ const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
 __constant__ int kern[9];
 
+/*
 __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 
   const int di = 1;
@@ -49,6 +50,8 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
     out[ind] = sum;
   }
 }
+
+*/
 
 __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
                                     int *out) {
