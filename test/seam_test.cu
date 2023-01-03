@@ -2,8 +2,10 @@
 #include "host_utils.h"
 #include "gpu_v1.h"
 #include <vector>
+#include <iostream>
 #define X first
 #define Y second
+
 
 using namespace std;
 
@@ -60,7 +62,9 @@ int main(int argc, char **argv) {
   }
   if (ver == 0) {
     host_test();
-  } else
+  } else {
+    std::cout << "Testing Gpu ver " << ver << '\n';
     gpu_test(ver);
+  }
   return 0;
 }

@@ -24,6 +24,7 @@ bool check_answer(int *act, int *expected, int n, int ncase) {
     for (int i = 0; i < n; ++i) {
       cout << expected[i] << ' ';
     }
+    cout << '\n';
     return false;
   }
 
