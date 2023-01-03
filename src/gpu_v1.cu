@@ -12,11 +12,49 @@ const int SOBEL_X[] = {
 
 const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
-__global__ void V1_conv_kernel(int *in, int n, int m, int *out) {
+__constant__ int kern[9];
 
+__global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
+
+  const int di = 1;
+  const int filterWidth = 3;
+	int blkR = blockIdx.y * blockDim.y;
+	int blkC = blockIdx.x * blockDim.x;
+	int r = blkR + threadIdx.y;
+	int c = blkC + threadIdx.x;	
+	extern __shared__ int s_in[];
+	s_in[threadIdx.y * blockDim.x + threadIdx.x] = in[r * w + c];
+	__syncthreads();
+	if (threadIdx.x < blockDim.x && threadIdx.y < blockDim.y)
+	{
+		int ind = r * w + c;
+    int sum = 0;
+		for (int i = 0; i < filterWidth; i++)
+			for (int j = 0; j < filterWidth; j++)
+			{
+				int ki = i * filterWidth + j;
+				int x = threadIdx.x - di + j;
+				int y = threadIdx.y - di + i;
+				if (blkC + x < 0 || blkC + x >= w)
+					x = (blkC + x < 0) ? 0 : w - 1 - blkC;
+				if (blkR + y < 0 || blkR + y >= h)
+					y = (blkR + y < 0) ? 0 : h - 1 - blkR;
+				if (x < blockDim.x && y < blockDim.y)
+				{
+					int convind = y * blockDim.x + x;
+					sum += dc_filter[ki] * s_in[convind];
+				}
+				else
+				{
+					y += blkR;
+					x += blkC;
+					int convind = y * w + x;
+					sum += dc_filter[ki] * in[convind];
+				}
+			}
+		out[ind].x = sum;
+	}
 }
-
-void V1_conv(int *in, int n, int m, int *out) {}
 
 __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
                                     int *out) {
@@ -29,6 +67,27 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
   int pos = r * width + c;
   int ans = (d_in[pos] + d_in[pos + 1] + d_in[pos + 2]) / 3;
   out[pos] = ans;
+                                    }
+
+void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
+  int* d_in, d_out;
+  size_t imgSize = w * h * sizeof(int);
+  size_t kernSize = 9 * sizeof(int);
+  cudaMalloc(&d_in, imgSize);
+  cudaMalloc(&d_out, imgSize);
+  cudaMemcpy(d_in, in, imgSize, cudaMemcpyHostToDevice);
+  if (sobelx)
+    cudaMemcpyToSymbol(kern, SOBEL_X, kernSize);
+  else
+    cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize);
+  dim3 blockSize(32, 32);
+  dim3 gridSize((width-1)/blockSize.x + 1, (height-1)/blockSize.y + 1);
+  V1_conv_kernel<<<gridSize, blockSize, w * h * sizeof(int)>>>(d_in, w, h, d_out);
+  cudaDeviceSynchronize();
+  cudaGetLastError();
+  cudaMemcpy(out, d_out, cudaMemcpyDeviceToHost);
+  cudaFree(d_in);
+  cudaFree(d_out);
 }
 
 /*
