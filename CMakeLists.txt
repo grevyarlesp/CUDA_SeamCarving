@@ -3,11 +3,22 @@ project(SeamCarving LANGUAGES CXX CUDA)
 
 message("Computing architecture ${CC}")
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+message("Building in ${CMAKE_BUILD_TYPE} mode")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS YES)
 set(CMAKE_INCLUDE_HEADERS_IN_COMPILE_COMMANDS YES)
 
 set(EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
-set(CMAKE_CUDA_FLAGS "-Wall -Wextra")
+
+if (CMAKE_BUILD_TYPE MATCHES "Release")
+  set(CMAKE_CUDA_FLAGS "-Wall -Wextra")
+else()
+  set(CMAKE_CUDA_FLAGS "-Wall -Wextra -DDEBUG")
+endif()
 
 set(CMAKE_CUDA_ARCHITECTURES ${CC})
 
