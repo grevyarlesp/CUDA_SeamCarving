@@ -28,7 +28,10 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int row,
 
   if (col >= col_size)
     return;
+
   if (row == 0) {
+    d_dp[col] = d_in[0 + col];
+    return; 
   }
 
   int ans = -1;
@@ -38,10 +41,15 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int row,
     int col_ = col + j;
     if (col_ < 0 || col_ >= col_size)
       continue;
+
+    int tmp = d_dp[(row - 1) * col_size + col_];
+    if (ans == -1 || tmp < ans) {
+      ans = tmp;
+    }
   }
 
   d_trace[row * col_size + col] = tr;
-  d_dp[row * col_size + col] = ans;
+  d_dp[row * col_size + col] = ans + d_in[row * col_size + col];
 }
 
 /*
@@ -62,7 +70,6 @@ double V1_seam(int *in, int n, int m, int *out, int blocksize) {
 
   int *d_trace;
   CHECK(cudaMalloc(&d_trace, n * m * sizeof(int)));
-
 
 
   for (int i = 0; i < n; ++i) {
