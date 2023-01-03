@@ -119,6 +119,7 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 
     if (ans == -1 || tmp < ans) {
       ans = tmp;
+      tr = col_;
     }
   }
 
@@ -175,10 +176,12 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaMemcpy(trace, d_trace, height * width * sizeof(int),
                    cudaMemcpyDeviceToHost));
 
-  // trace wrong! -> fix
-  int pos = (int)(std::min_element(trace + (height - 1) * width,
-                                   trace + height * width) -
-                  (trace + (height - 1) * width));
+  int *dp = new int[width];
+  CHECK(cudaMemcpy(dp, d_dp + (height - 1) * width, width * sizeof(int),
+                   cudaMemcpyDeviceToHost));
+
+  // fix trace
+  int pos = (int)(std::min_element(dp, dp + width) - dp);
 
 #ifdef DEBUG
   cerr << "Pos = " << pos << '\n';
@@ -192,6 +195,7 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   }
 
   delete[] trace;
+  delete[] dp;
   CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_dp));
   CHECK(cudaFree(d_trace));
