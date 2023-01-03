@@ -10,8 +10,6 @@ const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
 __global__ void V1_conv_kernel(int *in, int n, int m, int *out) {}
 
-
-
 void V1_conv(int *in, int n, int m, int *out) {}
 
 
@@ -31,11 +29,11 @@ __global__ void V1_grayscale_kernel(unsigned char* d_in, int height, int width, 
    Dynamic programming kernel for finding seam
    */
 __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int row,
-                             int col_size) {
+                             int width) {
 
   int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (col >= col_size)
+  if (col >= width)
     return;
 
   if (row == 0) {
@@ -48,17 +46,17 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int row,
 
   for (int j = -1; j <= 1; ++j) {
     int col_ = col + j;
-    if (col_ < 0 || col_ >= col_size)
+    if (col_ < 0 || col_ >= width)
       continue;
 
-    int tmp = d_dp[(row - 1) * col_size + col_];
+    int tmp = d_dp[(row - 1) * width + col_];
     if (ans == -1 || tmp < ans) {
       ans = tmp;
     }
   }
 
-  d_trace[row * col_size + col] = tr;
-  d_dp[row * col_size + col] = ans + d_in[row * col_size + col];
+  d_trace[row * width + col] = tr;
+  d_dp[row * width + col] = ans + d_in[row * width + col];
 }
 
 
@@ -98,7 +96,7 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
       cudaMemcpy(trace, d_trace, height * width * sizeof(int), cudaMemcpyDeviceToHost));
 
   int pos = (int)(std::min_element(trace + (height - 1) * width, trace + height * width) -
-                  (trace + (height - 1)));
+                  (trace + (height - 1) * width));
 
   for (int i = height - 1; i >= 0; --i) {
     out[i] = pos;
