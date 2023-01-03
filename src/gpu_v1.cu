@@ -67,6 +67,8 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
 }
 
 void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
+
+  /*
   int *d_in, d_out;
   size_t imgSize = w * h * sizeof(int);
   size_t kernSize = 9 * sizeof(int);
@@ -86,6 +88,7 @@ void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
   CHECK(cudaMemcpy(out, d_out, cudaMemcpyDeviceToHost));
   cudaFree(d_in);
   CHECK(cudaFree(d_out));
+  */
 }
 
 /*
