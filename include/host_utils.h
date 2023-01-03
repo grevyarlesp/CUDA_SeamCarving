@@ -3,6 +3,4 @@
 
 bool check_answer(int *act, int *expected, int n, int ncase=-1);
 
-
-
 #endif

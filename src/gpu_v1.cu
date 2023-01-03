@@ -71,6 +71,11 @@ Output: result + time
 */
 double V1_seam(int *in, int height, int width, int *out, int blocksize) {
 
+#ifdef DEBUG 
+  cerr << "DEBUG for V1_seam" << '\n';
+  cerr << "==================================\n";
+#endif
+
   GpuTimer timer;
   timer.Start();
 
@@ -105,7 +110,7 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
                   (trace + (height - 1) * width));
 
 #ifdef DEBUG 
-  cerr << pos << '\n';
+  cerr << "Pos = " << pos << '\n';
 #endif
 
   for (int i = height - 1; i >= 0; --i) {
@@ -121,7 +126,15 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaFree(d_trace));
 
   timer.Stop();
+
+#ifdef DEBUG 
+  cerr << "End of debug for V1_seam" << '\n';
+  cerr << "==================================\n";
+#endif
+
+
   return timer.Elapsed();
+
 }
 
 __global__ void V1_seam_removal_kernel() {}
