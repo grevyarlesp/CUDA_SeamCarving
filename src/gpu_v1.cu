@@ -116,6 +116,8 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaMemcpy(trace, d_trace, height * width * sizeof(int),
                    cudaMemcpyDeviceToHost));
 
+
+  // trace wrong! -> fix 
   int pos = (int)(std::min_element(trace + (height - 1) * width,
                                    trace + height * width) -
                   (trace + (height - 1) * width));
