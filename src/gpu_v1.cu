@@ -1,8 +1,7 @@
-#include "gpu_v1.h"
 #include "gpu_utils.h"
+#include "gpu_v1.h"
+#include <__clang_cuda_builtin_vars.h>
 #include <algorithm>
-
-
 
 const int SOBEL_X[] = {
     1, 0, -1, 2, 0, -2, 1, 0, -1,
@@ -10,13 +9,26 @@ const int SOBEL_X[] = {
 
 const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
-__global__ void V1_conv_kernel(int *in, int n, int m, int *out) {
+__global__ void V1_conv_kernel(int *in, int n, int m, int *out) {}
+
+
+
+void V1_conv(int *in, int n, int m, int *out) {}
+
+
+__global__ void V1_grayscale_kernel(uint8_t *d_in, int height, int width, int *out) {
+
+
+  int r = blockDim.x * blockIdx.x + threadIdx.x;
+  int c = blockDim.y * blockIdx.y + threadIdx.y;
+
+  if (r >= height ||  c >= width) return;
+  int pos = r * width + c;
+  int ans = (d_in[pos] + d_in[pos + 1] + d_in[pos + 2]) / 3;
+  out[pos] = ans;
 
 }
 
-void V1_conv(int *in, int n, int m, int *out) {
-
-}
 
 /*
    Dynamic programming kernel for finding seam
@@ -31,7 +43,7 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int row,
 
   if (row == 0) {
     d_dp[col] = d_in[0 + col];
-    return; 
+    return;
   }
 
   int ans = -1;
@@ -52,12 +64,13 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int row,
   d_dp[row * col_size + col] = ans + d_in[row * col_size + col];
 }
 
+
+
 /*
 Input: n * m energy map
 Output: result + time
 */
 double V1_seam(int *in, int n, int m, int *out, int blocksize) {
-
 
   GpuTimer timer;
   timer.Start();
@@ -75,7 +88,6 @@ double V1_seam(int *in, int n, int m, int *out, int blocksize) {
   int *d_trace;
   CHECK(cudaMalloc(&d_trace, n * m * sizeof(int)));
 
-
   for (int i = 0; i < n; ++i) {
     V1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, i, m);
     CHECK(cudaDeviceSynchronize());
@@ -83,18 +95,19 @@ double V1_seam(int *in, int n, int m, int *out, int blocksize) {
   }
 
   // trace back
-  int* trace = new int[n * m];
+  int *trace = new int[n * m];
 
-  CHECK(cudaMemcpy(trace, d_trace, n * m * sizeof(int), cudaMemcpyDeviceToHost));
+  CHECK(
+      cudaMemcpy(trace, d_trace, n * m * sizeof(int), cudaMemcpyDeviceToHost));
 
-  int pos = (int) (std::min_element(trace + (n - 1) * m, trace + n * m) - (trace + (n - 1)));
-  
+  int pos = (int)(std::min_element(trace + (n - 1) * m, trace + n * m) -
+                  (trace + (n - 1)));
+
   for (int i = n - 1; i >= 0; --i) {
     out[i] = pos;
 
     if (i > 0)
       pos = trace[i * m + pos];
-
   }
 
   delete[] trace;
@@ -106,11 +119,6 @@ double V1_seam(int *in, int n, int m, int *out, int blocksize) {
   return timer.Elapsed();
 }
 
-__global__ void V1_seam_removal_kernel() {
+__global__ void V1_seam_removal_kernel() {}
 
-}
-
-__global__ void V1_seam_add_kernel() {
-
-
-}
+__global__ void V1_seam_add_kernel() {}

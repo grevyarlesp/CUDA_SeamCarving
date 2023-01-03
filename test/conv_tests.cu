@@ -30,8 +30,11 @@ void host_test() {
 }
 
 void test_gpu(int ver) {
+  if (ver == 1) {
 
+  } else {
 
+  }
 }
 
 int main() {
