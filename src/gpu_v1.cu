@@ -72,9 +72,32 @@ __global__ void min_kern(int* in, int n, int* out)
         out[blockIdx.x] = in[numElemsBeforeBlk];
 }
 
+#define TILE_DIM 32
+#define BLOCK_ROWS 8
+
 __global__ void Tpose_kern(int *in , int w, int h, int* out)
 {
-  
+      __shared__ int tile[TILE_DIM][TILE_DIM];
+    int i_n = blockIdx.x * TILE_DIM + threadIdx.x;
+    int i_m = blockIdx.y * TILE_DIM + threadIdx.y;
+
+
+    int i;
+    for (i = 0; i < TILE_DIM; i += BLOCK_ROWS){
+        if(i_n < n  && (i_m+i) < m){
+            tile[threadIdx.y+i][threadIdx.x] = matIn[(i_m+i)*n + i_n];
+        }
+    }
+    __syncthreads();
+
+    i_n = blockIdx.y * TILE_DIM + threadIdx.x; 
+    i_m = blockIdx.x * TILE_DIM + threadIdx.y;
+
+    for (i = 0; i < TILE_DIM; i += BLOCK_ROWS){
+        if(i_n < m  && (i_m+i) < n){
+            matTran[(i_m+i)*m + i_n] = tile[threadIdx.x][threadIdx.y + i];
+        }
+    }
 }
 
 __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
