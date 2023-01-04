@@ -30,10 +30,11 @@ void grayscale(string in_path) {
 
   unsigned char *img =
       stbi_load(in_path.c_str(), &width, &height, &channels, 3);
-  assert(channels == 3);
-
   cout << "Channels: " << ' ' << channels << " width " << width << " height "
        << height << '\n';
+
+
+  assert(channels == 3);
 
   int *gray = new int[height * width];
 
