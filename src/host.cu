@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cstdlib>
+#include <cwchar>
 #include <math.h>
 #include <stdio.h>
 #include <vector>
@@ -10,6 +12,34 @@ const int SOBEL_X[] = {
 };
 
 const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
+
+/*
+  Converting to grayscale
+  Input: 3 * height * width
+  Output: height * width
+ */
+void host_to_grayscale(unsigned char *in, int height, int width, int *out) {
+  for (int i = 0; i < height * width; i += 3) {
+    int x = in[i] + in[i + 1] + in[i + 2];
+    x /= 3;
+    out[i] = x;
+  }
+}
+
+/*
+   For highlighting seam:
+Input: 3 * width * height, seam of [height] elements
+Output: 3 * width * height, with seam highlighted in red
+  😱
+ */
+
+void host_highlight_seam(unsigned char *out, int height, int width, int *seam) {
+  for (int i = 0; i < height; ++i) {
+    out[i * width + seam[i]] = 255;
+    out[i * width + seam[i] + 1] = 0;
+    out[i * width + seam[i] + 2] = 0;
+  }
+}
 
 /*
 Input: n * m grayscale image, n *m rows
@@ -83,4 +113,23 @@ void host_dp_seam(int *in, int n, int m, int *out) {
   }
 }
 
-void host_full(int *in, int n, int m, int *out) { return; }
+void host_full(unsigned char *to_process, int height, int width, int *seam) {
+
+  // to grayscale
+  int *gray = new int[height * width];
+  host_to_grayscale(to_process, height, width, gray);
+
+  int *energy_map = new int[height * width];
+  host_sobel_conv(gray, height, width, energy_map);
+
+  // seam = [height]
+  host_dp_seam(energy_map, height, width, seam);
+
+  // out: 3 * width * height
+
+  host_highlight_seam(to_process, height, width, seam);
+
+  delete[] gray;
+  delete[] energy_map;
+  return;
+}

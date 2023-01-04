@@ -13,7 +13,6 @@ set(CMAKE_INCLUDE_HEADERS_IN_COMPILE_COMMANDS YES)
 
 set(EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
 
-
 set(CMAKE_CUDA_FLAGS "-Wall -Wextra ")
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${EXTRAFLAGS} ")
@@ -50,3 +49,6 @@ set_target_properties(conv_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(seam_test ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/seam_test.cu)
 set_target_properties(seam_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+add_executable(host_answer_gen ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/host_answer_gen.cu)
+set_target_properties(host_answer_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
