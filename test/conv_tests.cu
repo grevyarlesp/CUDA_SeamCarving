@@ -38,7 +38,6 @@ void test_gpu(int ver) {
 }
 
 int main() {
-  printDeviceInfo();
   host_test();
 
   return 0;
