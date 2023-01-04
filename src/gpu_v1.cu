@@ -56,6 +56,27 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 	}
 }
 
+__global__ void min_kern(int* in, int n, int* out)
+{
+  int numElemsBeforeBlk = blockIdx.x * blockDim.x * 2;
+    for (int stride = blockDim.x; stride >= 1; stride /= 2)
+    {
+        int i = numElemsBeforeBlk + threadIdx.x;
+        if (threadIdx.x < stride)
+            if ((i + stride < n) && (in[i] != in[i + stride]))
+                in[i] = in[i] < in[i + stride] ? in[i] : i[i + stride];
+
+        __syncthreads();
+    }
+    if (threadIdx.x == 0)
+        out[blockIdx.x] = in[numElemsBeforeBlk];
+}
+
+__global__ void Tpose_kern(int *in , int w, int h, int* out)
+{
+  
+}
+
 __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
                                     int *out) {
 
