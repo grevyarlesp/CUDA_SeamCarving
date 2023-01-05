@@ -53,6 +53,7 @@ void test_v1_seam(string in_path, int blocksize = 256) {
 
   dim3 block_size(32, 32);
   dim3 grid_size((width - 1) / blocksize + 1, (height - 1) / blocksize + 1);
+
   V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
