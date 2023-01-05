@@ -252,3 +252,23 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
 __global__ void V1_seam_removal_kernel() {}
 
 __global__ void V1_seam_add_kernel() {}
+
+void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
+                   int blocksize) {
+
+  unsigned char *d_in;
+  CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
+
+  int *d_gray;
+  CHECK(cudaMalloc(&d_gray, sizeof(char) * height * width));
+
+  dim3 block_size(blocksize, blocksize);
+  dim3 grid_size((height - 1) / blocksize + 1, (width - 1) / blocksize + 1);
+
+  V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
+
+  
+
+  
+  
+}

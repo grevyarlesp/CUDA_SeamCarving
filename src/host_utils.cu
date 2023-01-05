@@ -30,3 +30,16 @@ bool check_answer(int *act, int *expected, int n, int ncase) {
   cout << "CORRECT\n";
   return true;
 }
+
+string add_ext(const string &in_path, string to_add) {
+
+  size_t lastindex = in_path.find_last_of(".");
+
+  to_add = "_" + to_add;
+
+  string out = in_path;
+  out.insert(lastindex, to_add);
+  return out;
+}
+
+

@@ -1,5 +1,6 @@
 // Generating answers for big test cases
 #include "host.h"
+#include "host_utils.h"
 #include <iostream>
 #include <string>
 
@@ -10,17 +11,6 @@
 
 using std::cout;
 using std::string;
-
-string add_ext(const string &in_path, string to_add) {
-
-  size_t lastindex = in_path.find_last_of(".");
-
-  to_add = "_" + to_add;
-
-  string out = in_path;
-  out.insert(lastindex, to_add);
-  return out;
-}
 
 void grayscale(string in_path) {
   int width, height, channels;
