@@ -1,5 +1,7 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
+#include "../include/gpu_utils.h"
+#include "../include/gpu_v1.h"
 #include <algorithm>
 #include <iostream>
 
@@ -28,43 +30,49 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
   if (threadIdx.x < blockDim.x && threadIdx.y < blockDim.y) {
     int ind = r * w + c;
     int sum = 0;
-    for (int i = 0; i < filterWidth; i++)
-      for (int j = 0; j < filterWidth; j++) {
-        int ki = i * filterWidth + j;
-        int x = threadIdx.x - di + j;
-        int y = threadIdx.y - di + i;
-        if (blkC + x < 0 || blkC + x >= w)
-          x = (blkC + x < 0) ? 0 : w - 1 - blkC;
-        if (blkR + y < 0 || blkR + y >= h)
-          y = (blkR + y < 0) ? 0 : h - 1 - blkR;
-        if (x <= blockDim.x && y <= blockDim.y) {
-          int convind = y * blockDim.x + x;
-          sum += dc_filter[ki] * s_in[convind];
-        } else {
-          y += blkR;
-          x += blkC;
-          int convind = y * w + x;
-          sum += dc_filter[ki] * in[convind];
-        }
-      }
-    out[ind] = sum;
-  }
+		for (int i = 0; i < filterWidth; i++)
+			for (int j = 0; j < filterWidth; j++)
+			{
+				int ki = i * filterWidth + j;
+				int x = threadIdx.x - di + j;
+				int y = threadIdx.y - di + i;
+				if (blkC + x < 0 || blkC + x >= w)
+					x = (blkC + x < 0) ? 0 : w - 1 - blkC;
+				if (blkR + y < 0 || blkR + y >= h)
+					y = (blkR + y < 0) ? 0 : h - 1 - blkR;
+				if (x < blockDim.x && y < blockDim.y)
+				{
+					int convind = y * blockDim.x + x;
+					sum += kern[ki] * s_in[convind];
+				}
+				else
+				{
+					y += blkR;
+					x += blkC;
+					int convind = y * w + x;
+					sum += kern[ki] * in[convind];
+				}
+			}
+		out[ind] = sum;
+	}
 }
 */
 
-__global__ void min_kern(int *d_in, int n, int *out) {
-  int numElemsBeforeBlk = blockIdx.x * blockDim.x * 2;
-  for (int stride = blockDim.x; stride >= 1; stride /= 2) {
-    int i = numElemsBeforeBlk + threadIdx.x;
-    if (threadIdx.x < stride)
-      if ((i + stride < n) && (d_in[i] != d_in[i + stride]))
-        d_in[i] = d_in[i] < d_in[i + stride] ? d_in[i] : d_in[i + stride];
+// __global__ void min_kern(int* in, int n, int* out)
+// {
+//   int numElemsBeforeBlk = blockIdx.x * blockDim.x * 2;
+//     for (int stride = blockDim.x; stride >= 1; stride /= 2)
+//     {
+//         int i = numElemsBeforeBlk + threadIdx.x;
+//         if (threadIdx.x < stride)
+//             if ((i + stride < n) && (in[i] != in[i + stride]))
+//                 in[i] = in[i] < in[i + stride] ? in[i] : i[i + stride];
 
-    __syncthreads();
-  }
-  if (threadIdx.x == 0)
-    out[blockIdx.x] = d_in[numElemsBeforeBlk];
-}
+//         __syncthreads();
+//     }
+//     if (threadIdx.x == 0)
+//         out[blockIdx.x] = in[numElemsBeforeBlk];
+// }
 
 #define TILE_DIM 32
 #define BLOCK_ROWS 8
@@ -105,10 +113,23 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
   out[pos] = ans;
 }
 
-void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
+void V1_grayscale(unsigned char* in, int height, int width, int* out)
+{
+  unsigned char *d_in;
+  int* d_out;
+  cudaMalloc(&d_in, height * width * sizeof(unsigned char));
+  cudaMalloc(&d_out, height * width * sizeof(int));
+  cudaMemcpy(d_in, in, height * width * sizeof(unsigned char), cudaMemcpyHostToDevice);
+  dim3 blockSize(32, 32);
+  dim3 gridSize((width-1)/blockSize.x + 1, (height-1)/blockSize.y + 1);
+  V1_grayscale_kernel<<<gridSize, blockSize>>>(d_in, height, width, d_out);
+  cudaMemcpy(out, d_out, height * width * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaFree(d_in);
+  cudaFree(d_out);
+}
 
-  /*
-  int *d_in, d_out;
+void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
+  int *d_in, *d_out;
   size_t imgSize = w * h * sizeof(int);
   size_t kernSize = 9 * sizeof(int);
   CHECK(cudaMalloc(&d_in, imgSize));
@@ -119,15 +140,13 @@ void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
   else
     cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize);
   dim3 blockSize(32, 32);
-  dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
-  V1_conv_kernel<<<gridSize, blockSize, w * h * sizeof(int)>>>(d_in, w, h,
-                                                               d_out);
+  dim3 gridSize((w-1)/blockSize.x + 1, (h-1)/blockSize.y + 1);
+  V1_conv_kernel<<<gridSize, blockSize, w * h * sizeof(int)>>>(d_in, w, h, d_out);
   cudaDeviceSynchronize();
   cudaGetLastError();
-  CHECK(cudaMemcpy(out, d_out, cudaMemcpyDeviceToHost));
+  cudaMemcpy(out, d_out, w * h * sizeof(int), cudaMemcpyDeviceToHost);
   cudaFree(d_in);
   CHECK(cudaFree(d_out));
-  */
 }
 
 /*
