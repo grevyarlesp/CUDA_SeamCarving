@@ -3,6 +3,8 @@
 #include "host_utils.h"
 #include <cstdio>
 #include "gpu_v1.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 using namespace std;
 
