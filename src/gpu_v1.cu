@@ -120,9 +120,9 @@ void V1_grayscale(unsigned char *in, int height, int width, int *out) {
   cudaFree(d_out);
 }
 
-void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
+void V1_conv(int *in, int height, int width, bool sobelx, int *out) {
   int *d_in, *d_out;
-  size_t imgSize = w * h * sizeof(int);
+  size_t imgSize = width * height * sizeof(int);
   size_t kernSize = 9 * sizeof(int);
   CHECK(cudaMalloc(&d_in, imgSize));
   CHECK(cudaMalloc(&d_out, imgSize));
@@ -132,12 +132,12 @@ void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
   else
     cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize);
   dim3 blockSize(32, 32);
-  dim3 gridSize((w - 1) / blockSize.x + 1, (h - 1) / blockSize.y + 1);
-  V1_conv_kernel<<<gridSize, blockSize, w * h * sizeof(int)>>>(d_in, w, h,
+  dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
+  V1_conv_kernel<<<gridSize, blockSize, width * height * sizeof(int)>>>(d_in, width, height,
                                                                d_out);
   cudaDeviceSynchronize();
   cudaGetLastError();
-  cudaMemcpy(out, d_out, w * h * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(out, d_out, width * height * sizeof(int), cudaMemcpyDeviceToHost);
   cudaFree(d_in);
   CHECK(cudaFree(d_out));
 }
