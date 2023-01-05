@@ -215,17 +215,13 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaMalloc(&d_trace, height * width * sizeof(int)));
 
   for (int i = 0; i < height; ++i) {
-#ifdef V1_DEBUG_ROW
-    cerr << i << ' ';
+#ifdef V1_DEBUG
+    cerr << "Row " <<  i << '\n';
 #endif
     V1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, width, i);
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
   }
-
-#ifdef V1_DEBUG_ROW
-    cerr<<  '\n';
-#endif
 
   // trace back
   int *trace = new int[height * width];

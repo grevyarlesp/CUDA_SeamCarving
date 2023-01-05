@@ -41,7 +41,6 @@ void test_v1_seam(string in_path, int blocksize = 256) {
   cout << "Channels " << channels << " width " << width << " height " << height
        << '\n';
 
-
   unsigned char *d_in;
 
   CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
@@ -52,33 +51,30 @@ void test_v1_seam(string in_path, int blocksize = 256) {
   dim3 block_size(blocksize, blocksize);
   dim3 grid_size((width - 1) / blocksize + 1, (height - 1) / blocksize + 1);
   V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
+  CHECK(cudaDeviceSynchronize());
+  CHECK(cudaGetLastError());
 
   int *gray = new int[height * width];
 
-  CHECK(cudaMemcpy(gray, d_gray, sizeof(int) * height * width, cudaMemcpyDeviceToHost));
-  
+  CHECK(cudaMemcpy(gray, d_gray, sizeof(int) * height * width,
+                   cudaMemcpyDeviceToHost));
 
   string out_path = add_ext(in_path, "gray_v1");
 
   unsigned char *ugray = to_uchar(gray, height * width);
   stbi_write_png(out_path.c_str(), width, height, 1, ugray, width * 1);
 
-
   int *emap = new int[height * width];
 
   // TODO: replace conv kernel here
   host_sobel_conv(gray, height, width, emap);
 
-
   int *seam = new int[height];
   V1_seam(emap, height, width, seam);
 
-
-  
   host_highlight_seam(img, height, width, seam);
   out_path = add_ext(in_path, "seam_v1");
 
-  
   stbi_write_png(out_path.c_str(), width, height, 3, img, width * 3);
 }
 
