@@ -224,7 +224,7 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   }
 
 #ifdef V1_DEBUG_ROW
-    cerr  '\n';
+    cerr<<  '\n';
 #endif
 
   // trace back
