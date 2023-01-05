@@ -1,5 +1,3 @@
-#include "gpu_utils.h"
-#include "gpu_v1.h"
 #include "../include/gpu_utils.h"
 #include "../include/gpu_v1.h"
 #include <algorithm>
