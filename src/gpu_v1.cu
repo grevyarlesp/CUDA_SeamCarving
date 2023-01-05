@@ -105,14 +105,14 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
   out[pos] = ans;
 }
 
-void V1_grayscale(unsigned char *in, int height, int width, int *out) {
+void V1_grayscale(unsigned char *in, int height, int width, int *out, int block_size) {
   unsigned char *d_in;
   int *d_out;
   cudaMalloc(&d_in, height * width * sizeof(unsigned char));
   cudaMalloc(&d_out, height * width * sizeof(int));
   cudaMemcpy(d_in, in, height * width * sizeof(unsigned char),
              cudaMemcpyHostToDevice);
-  dim3 blockSize(32, 32);
+  dim3 blockSize(block_size, block_size);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
   V1_grayscale_kernel<<<gridSize, blockSize>>>(d_in, height, width, d_out);
   cudaMemcpy(out, d_out, height * width * sizeof(int), cudaMemcpyDeviceToHost);
