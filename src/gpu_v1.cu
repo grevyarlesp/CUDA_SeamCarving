@@ -102,7 +102,9 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
     return;
   int pos = (r * width + c);
   int pos_ = pos * 3;
-  int ans = (d_in[3 * pos] + d_in[3 * pos + 1] + d_in[3 * pos + 2]) / 3;
+  int ans = d_in[pos_];
+  ans = ans + d_in[pos_ + 1] + d_in[pos_ + 2];
+  ans /= 3;
   out[pos] = ans;
 }
 
