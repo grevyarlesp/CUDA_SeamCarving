@@ -24,10 +24,10 @@ void host_to_grayscale(unsigned char *in, int height, int width, int *out) {
 
   for (int i = 0, cnt = 0; i < height * width * 3; i += 3, ++cnt) {
     int x = 0; 
-    x += in[i];
-    x += in[i + 1]; 
+    x += in[i] * 3;
+    x += in[i + 1] * 6; 
     x += in[i + 2];
-    x /= 3;
+    x /= 10;
     out[cnt] = x;
   }
 }
