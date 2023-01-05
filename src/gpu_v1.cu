@@ -100,15 +100,19 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
 
   if (r >= height || c >= width)
     return;
-  int pos = (r * width + c);
+
+  int pos = r * width + c;
   int pos_ = pos * 3;
+
   int ans = d_in[pos_];
   ans = ans + d_in[pos_ + 1] + d_in[pos_ + 2];
   ans /= 3;
+
   out[pos] = ans;
 }
 
-void V1_grayscale(unsigned char *in, int height, int width, int *out, int block_size) {
+void V1_grayscale(unsigned char *in, int height, int width, int *out,
+                  int block_size) {
   unsigned char *d_in;
   int *d_out;
   cudaMalloc(&d_in, height * width * sizeof(unsigned char));
@@ -135,8 +139,8 @@ void V1_conv(int *in, int height, int width, bool sobelx, int *out) {
 
   dim3 blockSize(32, 32);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
-  V1_conv_kernel<<<gridSize, blockSize, width * height * sizeof(int)>>>(d_in, width, height,
-                                                               d_out);
+  V1_conv_kernel<<<gridSize, blockSize, width * height * sizeof(int)>>>(
+      d_in, width, height, d_out);
   cudaDeviceSynchronize();
   cudaGetLastError();
   cudaMemcpy(out, d_out, width * height * sizeof(int), cudaMemcpyDeviceToHost);
@@ -218,7 +222,7 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
 
   for (int i = 0; i < height; ++i) {
 #ifdef V1_DEBUG
-    cerr << "Row " <<  i << '\n';
+    cerr << "Row " << i << '\n';
 #endif
     V1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, width, i);
     CHECK(cudaDeviceSynchronize());
