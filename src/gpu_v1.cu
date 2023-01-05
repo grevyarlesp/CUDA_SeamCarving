@@ -178,7 +178,6 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 #ifdef V1_DEBUG
   printf("%d %d %d\n", row, col, d_in[row * width + col]);
 #endif
-
   d_dp[row * width + col] = ans + d_in[row * width + col];
 #ifdef V1_DEBUG
   printf("DP %d %d %d\n", row, col, d_dp[row * width + col]);

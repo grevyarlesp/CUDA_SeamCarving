@@ -45,7 +45,7 @@ void test_v1_seam(string in_path, int blocksize = 256) {
 
   CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
 
-  CHECK(cudaMemcpy(d_in, img, sizeof(unsigned char) * height * width,
+  CHECK(cudaMemcpy(d_in, img, sizeof(unsigned char) * 3 * height * width,
                    cudaMemcpyHostToDevice));
 
   int *d_gray;
