@@ -126,11 +126,10 @@ void V1_conv(int *in, int height, int width, bool sobelx, int *out) {
   size_t kernSize = 9 * sizeof(int);
   CHECK(cudaMalloc(&d_in, imgSize));
   CHECK(cudaMalloc(&d_out, imgSize));
-  cudaMemcpy(d_in, in, imgSize, cudaMemcpyHostToDevice);
-  if (sobelx)
-    cudaMemcpyToSymbol(kern, SOBEL_X, kernSize);
-  else
-    cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize);
+  CHECK(cudaMemcpy(d_in, in, imgSize, cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpyToSymbol(kern, SOBEL_X, kernSize));
+  CHECK(cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize));
+
   dim3 blockSize(32, 32);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
   V1_conv_kernel<<<gridSize, blockSize, width * height * sizeof(int)>>>(d_in, width, height,
