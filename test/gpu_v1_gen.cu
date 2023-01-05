@@ -47,7 +47,7 @@ void test_v1_seam(string in_path, int blocksize = 256) {
   CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
 
   int *d_gray;
-  CHECK(cudaMalloc(&d_gray, sizeof(char) * height * width));
+  CHECK(cudaMalloc(&d_gray, sizeof(int) * height * width));
 
   dim3 block_size(blocksize, blocksize);
   dim3 grid_size((width - 1) / blocksize + 1, (height - 1) / blocksize + 1);
