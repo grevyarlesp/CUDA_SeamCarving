@@ -50,7 +50,7 @@ void test_v1_seam(string in_path, int blocksize = 256) {
   CHECK(cudaMalloc(&d_gray, sizeof(char) * height * width));
 
   dim3 block_size(blocksize, blocksize);
-  dim3 grid_size((height - 1) / blocksize + 1, (width - 1) / blocksize + 1);
+  dim3 grid_size((width - 1) / blocksize + 1, (height - 1) / blocksize + 1);
   V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
 
   int *gray = new int[height * width];
@@ -61,11 +61,12 @@ void test_v1_seam(string in_path, int blocksize = 256) {
   string out_path = add_ext(in_path, "gray_v1");
 
   unsigned char *ugray = to_uchar(gray, height * width);
-  stbi_write_png(out_path.c_str(), width, height, 3, ugray, width * 3);
+  stbi_write_png(out_path.c_str(), width, height, 1, ugray, width * 1);
 
 
-  // TODO: replace conv kernel
   int *emap = new int[height * width];
+
+  // TODO: replace conv kernel here
   host_sobel_conv(gray, height, width, emap);
 
 
@@ -84,6 +85,8 @@ void test_v1_seam(string in_path, int blocksize = 256) {
 int main(int argc, char **argv) {
   if (argc < 2)
     return 0;
+  printDeviceInfo();
+
   string file_path(argv[1]);
 
   // grayscale(file_path);

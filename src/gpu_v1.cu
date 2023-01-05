@@ -95,8 +95,8 @@ __global__ void Tpose_kern(int *d_in, int height, int width, int *out) {
 __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
                                     int *out) {
 
-  int r = blockDim.x * blockIdx.x + threadIdx.x;
-  int c = blockDim.y * blockIdx.y + threadIdx.y;
+  int r = blockDim.y * blockIdx.y + threadIdx.y;
+  int c = blockDim.x * blockIdx.x + threadIdx.x;
 
   if (r >= height || c >= width)
     return;
