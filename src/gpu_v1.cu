@@ -50,8 +50,47 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
     out[ind] = sum;
   }
 }
-
 */
+
+__global__ void min_kern(int *d_in, int n, int *out) {
+  int numElemsBeforeBlk = blockIdx.x * blockDim.x * 2;
+  for (int stride = blockDim.x; stride >= 1; stride /= 2) {
+    int i = numElemsBeforeBlk + threadIdx.x;
+    if (threadIdx.x < stride)
+      if ((i + stride < n) && (d_in[i] != d_in[i + stride]))
+        d_in[i] = d_in[i] < d_in[i + stride] ? d_in[i] : d_in[i + stride];
+
+    __syncthreads();
+  }
+  if (threadIdx.x == 0)
+    out[blockIdx.x] = d_in[numElemsBeforeBlk];
+}
+
+#define TILE_DIM 32
+#define BLOCK_ROWS 8
+
+__global__ void Tpose_kern(int *d_in, int height, int width, int *out) {
+  __shared__ int tile[TILE_DIM][TILE_DIM];
+  int i_n = blockIdx.x * TILE_DIM + threadIdx.x;
+  int i_m = blockIdx.y * TILE_DIM + threadIdx.y;
+
+  int i;
+  for (i = 0; i < TILE_DIM; i += BLOCK_ROWS) {
+    if (i_n < height && (i_m + i) < width) {
+      tile[threadIdx.y + i][threadIdx.x] = d_in[(i_m + i) * width + i_n];
+    }
+  }
+  __syncthreads();
+
+  i_n = blockIdx.y * TILE_DIM + threadIdx.x;
+  i_m = blockIdx.x * TILE_DIM + threadIdx.y;
+
+  for (i = 0; i < TILE_DIM; i += BLOCK_ROWS) {
+    if (i_n < height && (i_m + i) < width) {
+      out[(i_m + i) * width + i_n] = tile[threadIdx.x][threadIdx.y + i];
+    }
+  }
+}
 
 __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
                                     int *out) {
@@ -61,7 +100,7 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
 
   if (r >= height || c >= width)
     return;
-  int pos = r * width * 3 + c;
+  int pos = (r * width + c) * 3;
   int ans = (d_in[pos] + d_in[pos + 1] + d_in[pos + 2]) / 3;
   out[pos] = ans;
 }
