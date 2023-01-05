@@ -51,6 +51,8 @@ void gpu_test(int ver) {
 
       // V1_seam(V.data(), s.H, s.W, act);
       // check_answer(act, ans[i].data(), s.H * s.W, i);
+
+
       delete[] act;
     }
 
