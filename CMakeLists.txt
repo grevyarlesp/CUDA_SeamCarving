@@ -61,5 +61,3 @@ set_target_properties(host_answer_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(gpu_v1_gen ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/gpu_v1_gen.cu)
 set_target_properties(gpu_v1_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-
