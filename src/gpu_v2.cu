@@ -5,4 +5,6 @@
 
 using std::cerr;
 
-
+double V2_dp_seam() {
+  
+}

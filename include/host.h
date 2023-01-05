@@ -12,4 +12,6 @@ void host_full(unsigned char *in, int height, int width, int *seam);
 __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
                                     int *out);
 
+void host_highlight_seam(unsigned char *out, int height, int width, int *seam);
+
 #endif
