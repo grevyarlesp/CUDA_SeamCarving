@@ -1,5 +1,5 @@
-#include "../include/gpu_utils.h"
-#include "../include/gpu_v1.h"
+#include "gpu_utils.h"
+#include "gpu_v1.h"
 #include <algorithm>
 #include <iostream>
 
@@ -13,7 +13,6 @@ const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
 __constant__ int kern[9];
 
-/*
 __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 
   const int di = 1;
@@ -28,33 +27,28 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
   if (threadIdx.x < blockDim.x && threadIdx.y < blockDim.y) {
     int ind = r * w + c;
     int sum = 0;
-		for (int i = 0; i < filterWidth; i++)
-			for (int j = 0; j < filterWidth; j++)
-			{
-				int ki = i * filterWidth + j;
-				int x = threadIdx.x - di + j;
-				int y = threadIdx.y - di + i;
-				if (blkC + x < 0 || blkC + x >= w)
-					x = (blkC + x < 0) ? 0 : w - 1 - blkC;
-				if (blkR + y < 0 || blkR + y >= h)
-					y = (blkR + y < 0) ? 0 : h - 1 - blkR;
-				if (x < blockDim.x && y < blockDim.y)
-				{
-					int convind = y * blockDim.x + x;
-					sum += kern[ki] * s_in[convind];
-				}
-				else
-				{
-					y += blkR;
-					x += blkC;
-					int convind = y * w + x;
-					sum += kern[ki] * in[convind];
-				}
-			}
-		out[ind] = sum;
-	}
+    for (int i = 0; i < filterWidth; i++)
+      for (int j = 0; j < filterWidth; j++) {
+        int ki = i * filterWidth + j;
+        int x = threadIdx.x - di + j;
+        int y = threadIdx.y - di + i;
+        if (blkC + x < 0 || blkC + x >= w)
+          x = (blkC + x < 0) ? 0 : w - 1 - blkC;
+        if (blkR + y < 0 || blkR + y >= h)
+          y = (blkR + y < 0) ? 0 : h - 1 - blkR;
+        if (x < blockDim.x && y < blockDim.y) {
+          int convind = y * blockDim.x + x;
+          sum += kern[ki] * s_in[convind];
+        } else {
+          y += blkR;
+          x += blkC;
+          int convind = y * w + x;
+          sum += kern[ki] * in[convind];
+        }
+      }
+    out[ind] = sum;
+  }
 }
-*/
 
 // __global__ void min_kern(int* in, int n, int* out)
 // {
@@ -111,15 +105,15 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
   out[pos] = ans;
 }
 
-void V1_grayscale(unsigned char* in, int height, int width, int* out)
-{
+void V1_grayscale(unsigned char *in, int height, int width, int *out) {
   unsigned char *d_in;
-  int* d_out;
+  int *d_out;
   cudaMalloc(&d_in, height * width * sizeof(unsigned char));
   cudaMalloc(&d_out, height * width * sizeof(int));
-  cudaMemcpy(d_in, in, height * width * sizeof(unsigned char), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_in, in, height * width * sizeof(unsigned char),
+             cudaMemcpyHostToDevice);
   dim3 blockSize(32, 32);
-  dim3 gridSize((width-1)/blockSize.x + 1, (height-1)/blockSize.y + 1);
+  dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
   V1_grayscale_kernel<<<gridSize, blockSize>>>(d_in, height, width, d_out);
   cudaMemcpy(out, d_out, height * width * sizeof(int), cudaMemcpyDeviceToHost);
   cudaFree(d_in);
@@ -138,8 +132,9 @@ void V1_conv(int *in, int w, int h, bool sobelx, int *out) {
   else
     cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize);
   dim3 blockSize(32, 32);
-  dim3 gridSize((w-1)/blockSize.x + 1, (h-1)/blockSize.y + 1);
-  V1_conv_kernel<<<gridSize, blockSize, w * h * sizeof(int)>>>(d_in, w, h, d_out);
+  dim3 gridSize((w - 1) / blockSize.x + 1, (h - 1) / blockSize.y + 1);
+  V1_conv_kernel<<<gridSize, blockSize, w * h * sizeof(int)>>>(d_in, w, h,
+                                                               d_out);
   cudaDeviceSynchronize();
   cudaGetLastError();
   cudaMemcpy(out, d_out, w * h * sizeof(int), cudaMemcpyDeviceToHost);
@@ -283,9 +278,4 @@ void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
   dim3 grid_size((height - 1) / blocksize + 1, (width - 1) / blocksize + 1);
 
   V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
-
-  
-
-  
-  
 }
