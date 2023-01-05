@@ -84,6 +84,8 @@ void test_v1_seam(string in_path, int blocksize = 256) {
   host_highlight_seam(ugray, height, width, seam);
   out_path = add_ext(in_path, "seam_v1_gray");
 
+  stbi_write_png(out_path.c_str(), width, height, 3, img, width * 3);
+
   delete[] ugray;
 
 }
