@@ -32,7 +32,7 @@ __global__ void V2_conv_kernel(int *d_in, int height, int width, int *d_out) {
 __device__ int bCount;
 __device__ int done;
 
-__global__ void V2_dp_kernel(int *d_in, int *d_out, int *d_dp) {
+__global__ void V2_dp_kernel(int *d_in, int height, int width, int *d_out, int *d_dp) {
   __shared__ int bi;
 
   if (threadIdx.x == 0) {
@@ -41,14 +41,35 @@ __global__ void V2_dp_kernel(int *d_in, int *d_out, int *d_dp) {
 
   __syncthreads();
 
+  int tidx = threadIdx.x;
+  
+
   int cnt = gridDim.x * blockDim.x;
   int row = bi / cnt;
   int col = bi % cnt;
 
+  if (row >= height || col >= width) {
+    return;
+  }
 
+  // first row of the block
+  if (threadIdx.y == 0) {
+    
+    
+  }
+
+  // wait for the required number of threads to complete 
+
+  // merge results.
 
 
 }
+
+// tracing so we don't have to copy
+__global__ void trace_kernel(int *d_trace) {
+  
+}
+
 
 
 // overlapping convolution
