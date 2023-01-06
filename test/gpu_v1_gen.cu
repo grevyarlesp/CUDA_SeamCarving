@@ -48,10 +48,8 @@ void test_v1_seam(string in_path, bool write_to_file = false) {
   int *d_gray;
   CHECK(cudaMalloc(&d_gray, sizeof(int) * height * width));
 
-  dim3 block_size(32, 32);
-  dim3 grid_size((width - 1) / block_size.x + 1,
-                 (height - 1) / block_size.y + 1);
-
+  dim3 block_size(1024);
+  dim3 grid_size((height * width - 1) / block_size.x + 1);
   V2_grayscale_kernel<<<grid_size, block_size>>>(d_in, height * width, d_gray);
 
   cout << "Channels " << channels << " width " << width << " height " << height

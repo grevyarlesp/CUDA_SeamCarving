@@ -13,10 +13,9 @@ __global__ void V2_grayscale_kernel(unsigned char *d_in, int num_pixels,
   if (pos >= num_pixels) return;
 
   int pos_ = pos * 3;
-  int ans = d_in[pos_] * 3 + d_in[pos_ + 1] * 6 + d_in[pos_ + 2];
+  int ans = (d_in[pos_] * 3 + d_in[pos_ + 1] * 6 + d_in[pos_ + 2]) / 10;
 
   out[pos] = ans;
-
 }
 
 
