@@ -1,5 +1,6 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
+#include "gpu_v2.h"
 #include <algorithm>
 #include <iostream>
 
@@ -8,7 +9,7 @@ using std::cerr;
 __global__ void V2_grayscale_kernel(unsigned char *d_in, int num_pixels,
                                     int *out) {
 
-  int pos = blockDim.y * blockIdx.y + threadIdx.y;
+  int pos = blockDim.x * blockIdx.x + threadIdx.x;
   if (pos >= num_pixels) return;
 
   int pos_ = pos * 3;
@@ -17,6 +18,7 @@ __global__ void V2_grayscale_kernel(unsigned char *d_in, int num_pixels,
   out[pos] = ans;
 
 }
+
 
 // overlapping convolution
 double V2_dp_seam() {
