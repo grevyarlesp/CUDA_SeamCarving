@@ -29,7 +29,7 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_${CUARCH}")
 
 # set(CMAKE_CUDA_ARCHITECTURES ${CUARCH})
 
-message("Compiling for architecture ${CMAKE_CUDA_ARCHITECTURES}")
+# message("Compiling for architecture ${CMAKE_CUDA_ARCHITECTURES}")
 
 include_directories(
         ${PROJECT_SOURCE_DIR}/include

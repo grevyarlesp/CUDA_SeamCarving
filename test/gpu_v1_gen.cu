@@ -99,5 +99,5 @@ int main(int argc, char **argv) {
 
   // grayscale(file_path);
 
-  test_v1_seam(file_path);
+  test_v1_seam(file_path, true);
 }
