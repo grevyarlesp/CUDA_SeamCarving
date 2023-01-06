@@ -43,3 +43,12 @@ string add_ext(const string &in_path, string to_add) {
 }
 
 
+unsigned char *to_uchar(int *in, int n) {
+  unsigned char *ans = new unsigned char[n];
+  for (int i = 0; i < n; ++i) {
+    ans[i] = in[i];
+  }
+  return ans;
+}
+
+

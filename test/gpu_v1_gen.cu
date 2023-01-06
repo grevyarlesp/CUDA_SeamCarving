@@ -16,19 +16,11 @@
 using std::cout;
 using std::string;
 
-unsigned char *to_uchar(int *in, int n) {
-  unsigned char *ans = new unsigned char[n];
-  for (int i = 0; i < n; ++i) {
-    ans[i] = in[i];
-  }
-  return ans;
-}
-
 /*
    Output result for each steps
    */
 
-void test_v1_seam(string in_path) {
+void test_v1_seam(string in_path, bool write_to_file = false) {
   int width, height, channels;
 
   cout << "Reading from " << in_path << '\n';
@@ -38,8 +30,12 @@ void test_v1_seam(string in_path) {
 
   assert(channels == 3);
 
+  GpuTimer timer;
+
   cout << "Channels " << channels << " width " << width << " height " << height
        << '\n';
+
+  timer.Start();
 
   unsigned char *d_in;
 
@@ -52,7 +48,8 @@ void test_v1_seam(string in_path) {
   CHECK(cudaMalloc(&d_gray, sizeof(int) * height * width));
 
   dim3 block_size(32, 32);
-  dim3 grid_size((width - 1) / block_size.x + 1, (height - 1) / block_size.y + 1);
+  dim3 grid_size((width - 1) / block_size.x + 1,
+                 (height - 1) / block_size.y + 1);
 
   V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
 
@@ -67,10 +64,12 @@ void test_v1_seam(string in_path) {
   CHECK(cudaMemcpy(gray, d_gray, sizeof(int) * height * width,
                    cudaMemcpyDeviceToHost));
 
-  string out_path = add_ext(in_path, "gray_v1");
-
-  unsigned char *ugray = to_uchar(gray, height * width);
-  stbi_write_png(out_path.c_str(), width, height, 1, ugray, width * 1);
+  if (write_to_file) {
+    string out_path = add_ext(in_path, "gray_v1");
+    unsigned char *ugray = to_uchar(gray, height * width);
+    stbi_write_png(out_path.c_str(), width, height, 1, ugray, width * 1);
+    delete[] ugray;
+  }
 
   int *emap = new int[height * width];
 
@@ -80,12 +79,15 @@ void test_v1_seam(string in_path) {
   int *seam = new int[height];
   V1_seam(emap, height, width, seam);
 
+  timer.Stop();
+
   host_highlight_seam(img, height, width, seam);
-  out_path = add_ext(in_path, "seam_v1");
+
+  
+  string out_path = add_ext(in_path, "seam_v1");
 
   stbi_write_png(out_path.c_str(), width, height, 3, img, width * 3);
 
-  delete[] ugray;
 }
 
 int main(int argc, char **argv) {
