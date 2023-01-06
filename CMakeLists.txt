@@ -3,6 +3,7 @@ project(SeamCarving LANGUAGES CXX CUDA)
 
 
 if (NOT CUARCH)
+  message("Warning: Computing architecture not set. Defaulting to 75")
   set(CUARCH 75)
 endif()
 
@@ -23,8 +24,10 @@ set(LIBRARY_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
 # set(CMAKE_CUDA_FLAGS "-Wall -Wextra ")
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${EXTRAFLAGS} ")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_${CUARCH}")
 
-set(CMAKE_CUDA_ARCHITECTURES ${CUARCH})
+
+# set(CMAKE_CUDA_ARCHITECTURES ${CUARCH})
 
 message("Compiling for architecture ${CMAKE_CUDA_ARCHITECTURES}")
 
