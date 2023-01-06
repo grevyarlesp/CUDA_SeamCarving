@@ -2,7 +2,6 @@
 // Using the GPU to generate for certain parts
 #include "gpu_utils.h"
 #include "gpu_v1.h"
-#include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
 
@@ -52,7 +51,7 @@ void test_v1_seam(string in_path, bool write_to_file = false) {
   dim3 grid_size((width - 1) / block_size.x + 1,
                  (height - 1) / block_size.y + 1);
 
-  V2_grayscale_kernel<<<grid_size, block_size>>>(d_in, height * width, d_gray);
+  V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
 
   cout << "Channels " << channels << " width " << width << " height " << height
        << '\n';
