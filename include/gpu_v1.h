@@ -12,5 +12,8 @@ void V1_grayscale(unsigned char *in, int height, int width, int channels, int *o
 void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
                    int blocksize = 32);
 
+__global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
+                                    int *out);
+
 #endif /* GPU_V1_H */
 

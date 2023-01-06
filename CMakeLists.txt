@@ -2,11 +2,11 @@ cmake_minimum_required (VERSION 3.8)
 project(SeamCarving LANGUAGES CXX CUDA)
 
 
-if (NOT CC)
-  set(CC 75)
+if (NOT CUARCH)
+  set(CUARCH 75)
 endif()
 
-message("Computing architecture ${CC}")
+message("Computing architecture ${CUARCH}")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug")
@@ -18,12 +18,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS YES)
 set(CMAKE_INCLUDE_HEADERS_IN_COMPILE_COMMANDS YES)
 
 set(EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
+set(LIBRARY_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
 
 # set(CMAKE_CUDA_FLAGS "-Wall -Wextra ")
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${EXTRAFLAGS} ")
 
-set(CMAKE_CUDA_ARCHITECTURES ${CC})
+set(CMAKE_CUDA_ARCHITECTURES ${CUARCH})
 
 message("Compiling for architecture ${CMAKE_CUDA_ARCHITECTURES}")
 
@@ -31,15 +32,22 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/include
 )
 
-link_directories(
-      ${PROJECT_SOURCE_DIR}/src
-  )
-
+# link_directories(
+#       ${PROJECT_SOURCE_DIR}/src
+#   )
+#
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.cu"
         )
 
 list(REMOVE_ITEM all_SRCS ${PROJECT_SOURCE_DIR}/src/main.cu)
+
+file(GLOB all_HDRS
+        "${PROJECT_SOURCE_DIR}/include/*.h"
+        "${PROJECT_SOURCE_DIR}/include/*.cuh"
+        )
+
+
  
 file(GLOB test_SRCS
         "${PROJECT_SOURCE_DIR}/include/*.h"
@@ -47,17 +55,26 @@ file(GLOB test_SRCS
         )
 
 
-add_executable(SeamCarving ${all_SRCS} ${PROJECT_SOURCE_DIR}/src/main.cu)
+# Compiling libraries
+add_library(libs STATIC ${all_SRCS} ${all_HDRS})
+set_target_properties(libs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+add_executable(SeamCarving ${PROJECT_SOURCE_DIR}/src/main.cu)
 set_target_properties(SeamCarving PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(SeamCarving PUBLIC libs)
 
-add_executable(conv_test ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/conv_tests.cu)
+add_executable(conv_test ${PROJECT_SOURCE_DIR}/test/conv_tests.cu)
 set_target_properties(conv_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(conv_test PUBLIC libs)
 
-add_executable(seam_test ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/seam_test.cu)
+add_executable(seam_test ${PROJECT_SOURCE_DIR}/test/seam_test.cu)
 set_target_properties(seam_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(seam_test PUBLIC libs)
 
-add_executable(host_answer_gen ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/host_answer_gen.cu)
+add_executable(host_answer_gen ${PROJECT_SOURCE_DIR}/test/host_answer_gen.cu)
 set_target_properties(host_answer_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(host_answer_gen PUBLIC libs)
 
-add_executable(gpu_v1_gen ${all_SRCS} ${PROJECT_SOURCE_DIR}/test/gpu_v1_gen.cu)
+add_executable(gpu_v1_gen ${PROJECT_SOURCE_DIR}/test/gpu_v1_gen.cu)
 set_target_properties(gpu_v1_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(gpu_v1_gen PUBLIC libs)
