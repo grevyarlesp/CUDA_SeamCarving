@@ -1,6 +1,7 @@
 // Generating answers for big test cases
 #include "host.h"
 #include "host_utils.h"
+#include "gpu_utils.h"
 #include <iostream>
 #include <string>
 
@@ -58,6 +59,8 @@ void grayscale(string in_path) {
 }
 
 void seam(string in_path) {
+
+  
   int width, height, channels;
 
   cout << "Reading from " << in_path << '\n';
@@ -66,15 +69,19 @@ void seam(string in_path) {
       stbi_load(in_path.c_str(), &width, &height, &channels, 3);
   assert(channels == 3);
 
+
   cout << "Channels "  << channels << " width " << width << " height "
        << height << '\n';
 
   string out_path = add_ext(in_path, "seam");
 
   int *seam = new int[height];
+  GpuTimer timer;
+  timer.Start();
   host_full(img, height, width, seam);
+  timer.Stop();
 
-  cout << "Done, writing... " << out_path << '\n';
+  cout << "Compute time:  " << timer.Elapsed() << '\n';
 
   stbi_write_png(out_path.c_str(), width, height, 3, img, width * 3);
 
@@ -91,6 +98,6 @@ int main(int argc, char **argv) {
     return 0;
   string file_path(argv[1]);
 
-  grayscale(file_path);
+  //grayscale(file_path);
   seam(file_path);
 }

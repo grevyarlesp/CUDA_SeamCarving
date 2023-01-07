@@ -81,3 +81,8 @@ target_link_libraries(host_answer_gen PUBLIC libs)
 add_executable(gpu_v1_gen ${PROJECT_SOURCE_DIR}/test/gpu_v1_gen.cu)
 set_target_properties(gpu_v1_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(gpu_v1_gen PUBLIC libs)
+
+
+add_executable(gpu_v2_gen ${PROJECT_SOURCE_DIR}/test/gpu_v2_gen.cu)
+set_target_properties(gpu_v2_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(gpu_v2_gen PUBLIC libs)

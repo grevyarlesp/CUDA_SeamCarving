@@ -283,13 +283,14 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
       pos = trace[i * width + pos];
   }
 
+  timer.Stop();
+
   delete[] trace;
   delete[] dp;
   CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_dp));
   CHECK(cudaFree(d_trace));
 
-  timer.Stop();
 
 #ifdef DEBUG
   cerr << "End of debug for V1_seam" << '\n';
@@ -299,9 +300,13 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   return timer.Elapsed();
 }
 
-__global__ void V1_seam_removal_kernel() {}
+__global__ void V1_seam_removal_kernel(int *d_in, int height, int width, int *d_out) {
 
-__global__ void V1_seam_add_kernel() {}
+}
+
+__global__ void V1_seam_add_kernel() {
+
+}
 
 void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
                    int blocksize) {

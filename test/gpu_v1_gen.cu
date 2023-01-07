@@ -21,7 +21,7 @@ using std::string;
    Output result for each steps
    */
 
-void test_v1_seam(string in_path, bool write_to_file = false) {
+void test_v1_seam(string in_path, int blocksize, bool write_to_file = false) {
   int width, height, channels;
 
   cout << "Reading from " << in_path << '\n';
@@ -55,6 +55,8 @@ void test_v1_seam(string in_path, bool write_to_file = false) {
   cout << "Channels " << channels << " width " << width << " height " << height
        << '\n';
 
+  cout << "Block size" << ' ' << blocksize << '\n';
+
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
 
@@ -72,19 +74,15 @@ void test_v1_seam(string in_path, bool write_to_file = false) {
 
   int *emap = new int[height * width];
 
-  // TODO: replace conv kernel here
-  // host_sobel_conv(gray, height, width, emap);
-
   V1_conv(gray, height, width, emap);
 
   int *seam = new int[height];
-  V1_seam(emap, height, width, seam);
+  V1_seam(emap, height, width, seam, blocksize);
 
   timer.Stop();
 
   host_highlight_seam(img, height, width, seam);
 
-  
   string out_path = add_ext(in_path, "seam_v1");
 
   stbi_write_png(out_path.c_str(), width, height, 3, img, width * 3);
@@ -100,7 +98,12 @@ int main(int argc, char **argv) {
 
   string file_path(argv[1]);
 
+  int blocksize = 256;
+  if (argc > 2) 
+    blocksize = atoi(argv[2]);
+    
+
   // grayscale(file_path);
 
-  test_v1_seam(file_path, true);
+  test_v1_seam(file_path, blocksize);
 }

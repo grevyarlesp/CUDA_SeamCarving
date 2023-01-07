@@ -91,6 +91,64 @@ void gpu_test(int ver = 1) {
   }
 }
 
+void rand_test_2(int ver, int num = 2) {
+  int H = 64;
+  int W = 32;
+
+  srand(123445);
+  cout << "Random test" << '\n';
+  int *A = new int[H * H];
+  int *host_ans = new int[H];
+  int *gpu_ans = new int[H];
+  for (int i = 0; i < num; ++i) {
+    for (int j = 0; j < H * W; ++j) {
+      A[i] = rand() % 4000;
+    }
+
+    if (ver == 1) 
+      V1_seam(A, H, W, gpu_ans);
+    else  if (ver == 2)
+      V2_seam(A, H, W, gpu_ans);
+
+    host_dp_seam(A, H, W, host_ans);
+    check_answer(gpu_ans, host_ans, H, i);
+  }
+
+  delete[] A;
+  delete[] host_ans;
+  delete[] gpu_ans;
+}
+
+
+
+void rand_test(int ver, int num = 2) {
+
+  srand(123445);
+  cout << "Random test" << '\n';
+  int *A = new int[128 * 128];
+  int *host_ans = new int[128];
+  int *gpu_ans = new int[128];
+  for (int i = 0; i < num; ++i) {
+    for (int j = 0; j < 128 * 128; ++j) {
+      A[i] = rand() % 4000;
+    }
+
+    if (ver == 1) 
+      V1_seam(A, 128, 128, gpu_ans);
+    else  if (ver == 2)
+      V2_seam(A, 128, 128, gpu_ans);
+
+    host_dp_seam(A, 128, 128, host_ans);
+    check_answer(gpu_ans, host_ans, 128, i);
+  }
+
+  delete[] A;
+  delete[] host_ans;
+  delete[] gpu_ans;
+}
+
+
+
 int main(int argc, char **argv) {
   int ver = 0;
   if (argc == 2) {
@@ -100,7 +158,9 @@ int main(int argc, char **argv) {
     host_test();
   } else {
     std::cout << "Testing Gpu ver " << ver << '\n';
-    gpu_test(ver);
+    // gpu_test(ver);
+    rand_test(ver, 1);
+    rand_test_2(ver, 1);
   }
   return 0;
 }
