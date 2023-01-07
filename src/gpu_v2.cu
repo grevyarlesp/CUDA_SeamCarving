@@ -1,7 +1,6 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
 #include "gpu_v2.h"
-#include <__clang_cuda_builtin_vars.h>
 #include <algorithm>
 #include <iostream>
 
@@ -22,7 +21,7 @@ __global__ void V2_grayscale_kernel(unsigned char *d_in, int num_pixels,
 
 /*
    Manual merge, Parallelized  DP.
-   Split into 4 parts
+   Split into n_Stream parts
    */
 
 __global__ void V2_conv_kernel(int *d_in, int height, int width, int *d_out) {
@@ -48,13 +47,19 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width, int *d_out, int *
   int row = bi / cnt;
   int col = bi % cnt;
 
+
   if (row >= height || col >= width) {
     return;
   }
 
+  int pos = row * width + col;
+
   // first row of the block
   if (threadIdx.y == 0) {
-    
+    d_dp[pos] = d_in[pos];
+  } else {
+      // calculate required number of threads
+    int required = 0;
     
   }
 
