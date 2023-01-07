@@ -89,6 +89,8 @@ void test_v1_seam(string in_path, bool write_to_file = false) {
 
   stbi_write_png(out_path.c_str(), width, height, 3, img, width * 3);
 
+  cout << "Complete in " << timer.Elapsed() << '\n';
+
 }
 
 int main(int argc, char **argv) {
