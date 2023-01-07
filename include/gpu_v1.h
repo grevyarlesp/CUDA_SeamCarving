@@ -2,14 +2,11 @@
 #define GPU_V1_H 
 
 
-void V1_conv(int *in, int w, int h, bool sobelx, int *out);
+void V1_conv(int *in, int w, int h, int *out, int block_size = 32);
 double V1_seam(int *in, int n, int m, int *out, int blocksize  = 256);
 
 // 1024 max
-
-
-void V1_grayscale(unsigned char *in, int height, int width, int *out,
-                  int block_size = 32);
+void V1_grayscale(unsigned char *in, int height, int width, int *out, int blocksize = 32);
 
 
 void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
