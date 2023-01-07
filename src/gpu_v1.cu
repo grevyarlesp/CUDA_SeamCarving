@@ -13,6 +13,18 @@ const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
 __constant__ int kern[9];
 
+#define TILE_DIM 32
+
+__global__ void V1_sum(int* in1, int* in2, int width, int height, int *out)
+{
+  int r = blockIdx.y * blockDim.y + threadIdx.y;
+  int c = blockIdx.x * blockDim.x + threadIdx.x;
+  if (r >= height || c >= width)
+    return;
+  int pos = r*width + c;
+  out[pos] = in1[pos] + in2[pos];
+}
+
 __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 
   const int di = 1;
@@ -66,7 +78,6 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 //         out[blockIdx.x] = in[numElemsBeforeBlk];
 // }
 
-#define TILE_DIM 32
 #define BLOCK_ROWS 8
 
 __global__ void Tpose_kern(int *d_in, int height, int width, int *out) {
@@ -104,7 +115,8 @@ __global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
   int pos = r * width + c;
   int pos_ = pos * 3;
 
-  int ans = d_in[pos_] * 3 + d_in[pos_ + 1] * 6 + d_in[pos_ + 2];
+  int ans = d_in[pos_] * 3;
+  ans = ans + d_in[pos_ + 1] * 6 + d_in[pos_ + 2];
   ans /= 10;
 
   out[pos] = ans;
@@ -114,36 +126,55 @@ void V1_grayscale(unsigned char *in, int height, int width, int *out,
                   int block_size) {
   unsigned char *d_in;
   int *d_out;
-  cudaMalloc(&d_in, height * width * sizeof(unsigned char));
+  cudaMalloc(&d_in, height * width * 3 * sizeof(unsigned char));
   cudaMalloc(&d_out, height * width * sizeof(int));
-  cudaMemcpy(d_in, in, height * width * sizeof(unsigned char),
+  cudaMemcpy(d_in, in, height * width * 3 * sizeof(unsigned char),
              cudaMemcpyHostToDevice);
   dim3 blockSize(block_size, block_size);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
   V1_grayscale_kernel<<<gridSize, blockSize>>>(d_in, height, width, d_out);
-  cudaMemcpy(out, d_out, height * width * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaDeviceSynchronize();
+  CHECK(cudaMemcpy(out, d_out, height * width * sizeof(int), cudaMemcpyDeviceToHost));
   cudaFree(d_in);
   cudaFree(d_out);
 }
 
-void V1_conv(int *in, int height, int width, bool sobelx, int *out) {
-  int *d_in, *d_out;
+void V1_conv(int *in, int height, int width, int *out, int block_size) {
+  int *d_in, *d_out, *d_temp2, *d_temp1;
   size_t imgSize = width * height * sizeof(int);
   size_t kernSize = 9 * sizeof(int);
+
   CHECK(cudaMalloc(&d_in, imgSize));
+  CHECK(cudaMalloc(&d_temp1, imgSize));
+  CHECK(cudaMalloc(&d_temp2, imgSize));
   CHECK(cudaMalloc(&d_out, imgSize));
   CHECK(cudaMemcpy(d_in, in, imgSize, cudaMemcpyHostToDevice));
-  CHECK(cudaMemcpyToSymbol(kern, SOBEL_X, kernSize));
-  CHECK(cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize));
 
-  dim3 blockSize(32, 32);
+  dim3 blockSize(block_size, block_size);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
-  V1_conv_kernel<<<gridSize, blockSize, width * height * sizeof(int)>>>(
-      d_in, width, height, d_out);
+
+  //Sobel X
+  CHECK(cudaMemcpyToSymbol(kern, SOBEL_X, kernSize));
+  V1_conv_kernel<<<gridSize, blockSize, TILE_DIM * TILE_DIM * sizeof(int)>>>(
+      d_in, width, height, d_temp1);
+  cudaDeviceSynchronize();
+  cudaGetLastError();
+
+  //Sobel Y
+  CHECK(cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize));
+  V1_conv_kernel<<<gridSize, blockSize, TILE_DIM * TILE_DIM * sizeof(int)>>>(
+      d_in, width, height, d_temp2);
+  cudaDeviceSynchronize();
+  cudaGetLastError();
+
+  //Combine
+  V1_sum<<<gridSize, blockSize>>>(d_temp1, d_temp2, width, height, d_out);
   cudaDeviceSynchronize();
   cudaGetLastError();
   cudaMemcpy(out, d_out, width * height * sizeof(int), cudaMemcpyDeviceToHost);
   cudaFree(d_in);
+  CHECK(cudaFree(d_temp1));
+  CHECK(cudaFree(d_temp2));
   CHECK(cudaFree(d_out));
 }
 
