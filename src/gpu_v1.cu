@@ -22,7 +22,7 @@ __global__ void V1_sum(int* in1, int* in2, int width, int height, int *out)
   if (r >= height || c >= width)
     return;
   int pos = r*width + c;
-  out[pos] = in1[pos] + in2[pos];
+  out[pos] = abs(in1[pos]) + abs(in2[pos]);
 }
 
 __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
