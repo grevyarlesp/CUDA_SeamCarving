@@ -62,21 +62,98 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
   }
 }
 
-// __global__ void min_kern(int* in, int n, int* out)
-// {
-//   int numElemsBeforeBlk = blockIdx.x * blockDim.x * 2;
-//     for (int stride = blockDim.x; stride >= 1; stride /= 2)
-//     {
-//         int i = numElemsBeforeBlk + threadIdx.x;
-//         if (threadIdx.x < stride)
-//             if ((i + stride < n) && (in[i] != in[i + stride]))
-//                 in[i] = in[i] < in[i + stride] ? in[i] : i[i + stride];
+__inline__ __device__ void warpReduceMin(int& val, int& idx)
+{
+    for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+        int tmpVal = __shfl_down(val, offset);
+        int tmpIdx = __shfl_down(idx, offset);
+        if (tmpVal < val) {
+            val = tmpVal;
+            idx = tmpIdx;
+        }
+    }
+}
 
-//         __syncthreads();
-//     }
-//     if (threadIdx.x == 0)
-//         out[blockIdx.x] = in[numElemsBeforeBlk];
-// }
+__inline__ __device__  void blockReduceMin(int& val, int& idx) 
+{
+
+    __shared__ int values[32], indices[32]; // Shared mem for 32 partial mins
+    int lane = threadIdx.x % warpSize;
+    int wid = threadIdx.x / warpSize;
+
+    warpReduceMin(val, idx);     // Each warp performs partial reduction
+
+    if (lane == 0) {
+        values[wid] = val; // Write reduced value to shared memory
+        indices[wid] = idx; // Write reduced value to shared memory
+    }
+
+    __syncthreads();              // Wait for all partial reductions
+
+    //read from shared memory only if that warp existed
+    if (threadIdx.x < blockDim.x / warpSize) {
+        val = values[lane];
+        idx = indices[lane];
+    } else {
+        val = INT_MAX;
+        idx = 0;
+    }
+
+    if (wid == 0) {
+         warpReduceMin(val, idx); //Final reduce within first warp
+    }
+}
+
+__global__ void V1_min_kernel(int * in, int* ind, int n, int * out)
+{
+	// TODO
+    int min_val = INT_MAX;
+    int min_ind = 0;
+    int numElemsBeforeBlk = blockIdx.x * blockDim.x * 2;
+    for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+        i < n;
+        i += blockDim.x * gridDim.x)
+        {
+            if (in[i] < min_val)
+            {
+                min_val = in[i];
+                min_ind = i;
+            }
+        }
+    blockReduceMin(min_val, min_ind);
+    if (threadIdx.x == 0)
+        out[blockIdx.x] = min_ind;
+}
+
+int V1_min(int* in, int* ind, int n, int block_size){
+    int *d_in, *d_ind, *d_out;
+    dim3 blockSize(block_size);
+    dim3 gridSize((n - 1)/blockSize.x + 1);
+    int* out = (int*)malloc(gridSize.x*sizeof(int));
+    CHECK(cudaMalloc(&d_in, n*sizeof(int)));
+    CHECK(cudaMalloc(&d_ind, n*sizeof(int)));
+    CHECK(cudaMalloc(&d_out, gridSize.x*sizeof(int)));
+    CHECK(cudaMemcpy(d_in, in, n*sizeof(int), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_ind, ind, n*sizeof(int), cudaMemcpyHostToDevice));
+    
+    V1_min_kernel<<<gridSize, blockSize>>>(d_in, d_ind, n, d_out);
+    CHECK(cudaMemcpy(out, d_out, gridSize.x*sizeof(int), cudaMemcpyDeviceToHost));
+    int min_val = INT_MAX;
+    int min_ind = 0;
+    for(int i = 0; i < gridSize.x; i++)
+    {
+        if(in[out[i]] < min_val)
+        {
+            min_val = in[out[i]];
+            min_ind = out[i];
+        }
+    }
+    free(out);
+    CHECK(cudaFree(d_in));
+    CHECK(cudaFree(d_ind));
+    CHECK(cudaFree(d_out));
+    return min_ind
+}
 
 #define BLOCK_ROWS 8
 
