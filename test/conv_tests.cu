@@ -7,8 +7,8 @@
 #include <iostream>
 #include <cstdio>
 
-#define H  32
-#define W 32
+#define H  first
+#define W second
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -50,11 +50,10 @@ void gpu_test(int ver) {
       vector<int> &V = dat[i];
 
       pair<int, int> s = dat_sz[i];
-      int *act = new int[H * W];
+      int *act = new int[s.H * s.W];
 
-      // V1_seam(V.data(), s.H, s.W, act);
-      // check_answer(act, ans[i].data(), s.H * s.W, i);
-
+      V1_conv(V.data(), s.H, s.W, act);
+      check_answer(act, ans[i].data(), s.H * s.W, i);
 
       delete[] act;
     }
@@ -64,37 +63,16 @@ void gpu_test(int ver) {
   }
 }
 
-int main(int argc, char** argv)
-{
-  int width, height, channel;
-  if (argc < 2)
-    return 0;
-  int block_size = 32;
-  if (argc == 3)
-    block_size = atoi(argv[3]);
-  unsigned char* img = stbi_load(argv[1], &width, &height, &channel, 0);
-  cout << "Image of size " << width << "x" << height;
-  cout << " with " << channel << " channels\n";
-  int* grayImg = (int*)malloc(width * height * sizeof(int));
-  V1_grayscale(img, height, width, grayImg, block_size);
-  int* res = (int*)malloc(width * height * sizeof(int));
-  V1_conv(grayImg, height, width, res);
-  stbi_write_png(argv[2], width, height, 1, to_uchar(res, height * width), width);
-  free(img);
-  free(grayImg);
-  return 0;
+int main(int argc, char **argv) {
+   int ver = 0;
+   if (argc == 2) {
+     ver = atoi(argv[1]);
+   }
+   if (ver == 0) {
+     host_test();
+   } else {
+     std::cout << "Testing Gpu ver " << ver << '\n';
+     gpu_test(ver);
+   }
+   return 0;
 }
-
-// int main(int argc, char **argv) {
-//   int ver = 0;
-//   if (argc == 2) {
-//     ver = atoi(argv[1]);
-//   }
-//   if (ver == 0) {
-//     host_test();
-//   } else {
-//     std::cout << "Testing Gpu ver " << ver << '\n';
-//     gpu_test(ver);
-//   }
-//   return 0;
-//}

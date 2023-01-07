@@ -1,7 +1,6 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
 #include "gpu_v2.h"
-#include <__clang_cuda_builtin_vars.h>
 #include <algorithm>
 #include <iostream>
 

@@ -73,7 +73,9 @@ void test_v1_seam(string in_path, bool write_to_file = false) {
   int *emap = new int[height * width];
 
   // TODO: replace conv kernel here
-  host_sobel_conv(gray, height, width, emap);
+  // host_sobel_conv(gray, height, width, emap);
+
+  V1_conv(gray, height, width, emap);
 
   int *seam = new int[height];
   V1_seam(emap, height, width, seam);
