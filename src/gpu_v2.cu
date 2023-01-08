@@ -27,11 +27,10 @@ __global__ void V2_grayscale_kernel(unsigned char *d_in, int num_pixels,
 __global__ void V2_conv_kernel(int *d_in, int height, int width, int *d_out) {}
 
 __device__ int bCount;
-__device__ int *completed;
+__device__ int completed_block;
 
 /*
-   We divide the image into "strips",
-   Block size 32 required.
+   Use N * 1 blocks
    */
 
 __global__ void V2_dp_kernel(int *d_in, int height, int width,
@@ -49,8 +48,6 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
 
   int tidx = threadIdx.x;
 
-  int threads_per_row = gridDim.x * blockDim.x;
-
   // dynamic block id
   int blockId_y = bi / gridDim.x;
   // also strip Idx
@@ -62,7 +59,8 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
   }
 #endif
 
-  int row = blockId_y * blockDim.y + threadIdx.y;
+  // or blockId_y
+  int row = blockId_y;
   int col = blockId_x * blockDim.x + threadIdx.x;
 
   if (row >= height || col >= width) {
@@ -76,24 +74,21 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
   int pos = row * width + col;
 
   // first row of the block
-  if (threadIdx.y == 0) {
+  if (row == 0) {
 
     d_dp[pos] = d_in[pos];
-    atomicAdd(completed + blockId_y, 1);
   } else {
     // calculate required number of threads
     // all threads of previous rows in a strip
-    int required = (threadIdx.y - 1) * width;
+    int required = gridDim.y * (row - 1);
 
-#ifdef V2_DEBUG
-    printf("[%d, %d] Required = %d \n", row, col, required);
-    printf("[%d, %d] B_y %d Grid %d %d \n", row, col, blockId_y);
-#endif
+    // wait for the above row to complete
+    if (threadIdx.x == 0)
+      while (atomicAdd(&completed_block, 0) < required) {
+        ;
+      }
 
-    // wait for the required number of threads to complete
-    while (atomicAdd(completed + blockId_y, 0) < required) {
-      ;
-    }
+    __syncthreads();
 
 #ifdef V2_DEBUG
     printf("[%d, %d] doing DP\n", row, col);
@@ -121,64 +116,16 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
 
     d_dp[pos] = ans + d_in[pos];
     __threadfence();
-
-    atomicAdd(completed + blockId_y, 1);
   }
-
-#ifdef V2_DEBUG_PRINT_DP
-  printf("[%d, %d] DP = %d \n", row, col, d_dp[pos]);
-#endif
 
   __syncthreads();
 
-#ifdef V2_DEBUG_MERGE
-  if (blockId_x == 0 && threadIdx.y == 0) {
+  if (threadIdx.x == 0)
+    atomicAdd(&completed_block, 1);
 
-    printf("[%d, %d]  %d Merging results. completed threads %d\n", row, col,
-           blockId_y, atomicAdd(completed + blockId_y, 0));
-  }
-#endif
-
-  // merge results.
-  if (blockId_y > 0 && threadIdx.y == 0) {
-
-    int required = blockDim.y * width;
-
-    // wait for the required number of threads to complete
-    // this may not be worth it.
-    // prob better just to merge on host
-
-    while (atomicAdd(completed + blockId_y - 1, 0) < required) {
-      ;
-    }
-    
-    int ans = -1;
-
-    int left = col - 1;
-    if (left >= 0) {
-      ans = d_dp[(row - 1) * width + left];
-      d_trace[pos] = left;
-    }
-
-    int middle = col;
-    if (ans == -1 || ans > d_dp[(row - 1) * width + middle]) {
-      ans = d_dp[(row - 1) * width + middle];
-      d_trace[pos] = middle;
-    }
-
-    int right = col + 1;
-    if (right < width && (ans == -1 || ans > d_dp[(row - 1) * width + right])) {
-      ans = d_dp[(row - 1) * width + right];
-      d_trace[pos] = right;
-    }
-
-    int tmp = d_dp[pos];
-    d_dp[pos] = tmp + ans;
-    __threadfence();
-  }
 }
 
-// must : blocksize = 32
+// must : blocksize = 256 x 1
 // out[height]
 double V2_seam(int *in, int height, int width, int *out, int blocksize) {
 
@@ -203,17 +150,7 @@ double V2_seam(int *in, int height, int width, int *out, int blocksize) {
   int val = 0; // because we need to start at 0
   CHECK(cudaMemcpyToSymbol(bCount, &val, sizeof(int), 0));
 
-#ifdef V2_DEBUG
-  cerr << "Grid size " << grid_size.x << ' ' << grid_size.y << '\n';
-#endif
-
-  int *host_completed;
-  CHECK(cudaMalloc(&host_completed, sizeof(int) * grid_size.y));
-
-  CHECK(cudaMemset(host_completed, 0, grid_size.y * sizeof(int)));
-
-  CHECK(cudaMemcpyToSymbol(completed, &host_completed, sizeof(int *), size_t(0),
-                           cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpyToSymbol(completed_block, &val, sizeof(int), size_t(0)));
 
   V2_dp_kernel<<<grid_size, block_size>>>(d_in, height, width, d_dp, d_trace);
 

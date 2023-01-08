@@ -152,7 +152,7 @@ int V1_min(int* in, int* ind, int n, int block_size){
     CHECK(cudaFree(d_in));
     CHECK(cudaFree(d_ind));
     CHECK(cudaFree(d_out));
-    return min_ind
+    return min_ind;
 }
 
 #define BLOCK_ROWS 8

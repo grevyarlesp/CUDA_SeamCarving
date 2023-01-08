@@ -122,8 +122,8 @@ void rand_test_2(int ver, int num = 2) {
 
 
 void rand_test(int ver, int num = 2) {
+  srand(111222);
 
-  srand(123445);
   cout << "Random test" << '\n';
   int *A = new int[128 * 128];
   int *host_ans = new int[128];
@@ -158,9 +158,9 @@ int main(int argc, char **argv) {
     host_test();
   } else {
     std::cout << "Testing Gpu ver " << ver << '\n';
-    // gpu_test(ver);
+    std::cout << "Normal test" << ver << '\n';
+    gpu_test(ver);
     rand_test(ver, 1);
-    rand_test_2(ver, 1);
   }
   return 0;
 }
