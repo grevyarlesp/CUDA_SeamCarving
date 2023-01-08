@@ -76,25 +76,24 @@ set_target_properties(libs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(SeamCarving ${PROJECT_SOURCE_DIR}/src/main.cu)
 set_target_properties(SeamCarving PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(SeamCarving PUBLIC libs stbimage)
+target_link_libraries(SeamCarving PRIVATE libs)
 
 add_executable(conv_test ${PROJECT_SOURCE_DIR}/test/conv_tests.cu)
 set_target_properties(conv_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(conv_test PUBLIC libs stbimage)
+target_link_libraries(conv_test PRIVATE libs)
 
 add_executable(seam_test ${PROJECT_SOURCE_DIR}/test/seam_test.cu)
 set_target_properties(seam_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(seam_test PUBLIC libs stbimage)
+target_link_libraries(seam_test PRIVATE libs)
 
 add_executable(host_answer_gen ${PROJECT_SOURCE_DIR}/test/host_answer_gen.cu)
 set_target_properties(host_answer_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(host_answer_gen PUBLIC libs stbimage)
+target_link_libraries(host_answer_gen PRIVATE libs stbimage)
 
 add_executable(gpu_v1_gen ${PROJECT_SOURCE_DIR}/test/gpu_v1_gen.cu)
 set_target_properties(gpu_v1_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(gpu_v1_gen PUBLIC libs stbimage)
-
+target_link_libraries(gpu_v1_gen PRIVATE libs stbimage)
 
 add_executable(gpu_v2_gen ${PROJECT_SOURCE_DIR}/test/gpu_v2_gen.cu)
 set_target_properties(gpu_v2_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(gpu_v2_gen PUBLIC libs stbimage)
+target_link_libraries(gpu_v2_gen PRIVATE libs stbimage)

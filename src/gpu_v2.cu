@@ -77,12 +77,18 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
   if (row == 0) {
 
     d_dp[pos] = d_in[pos];
+    __threadfence();
+
   } else {
     // calculate required number of threads
     // all threads of previous rows in a strip
-    int required = gridDim.y * (row - 1);
+    int required = gridDim.x * row;
 
-    // wait for the above row to complete
+#ifdef V2_DEBUG
+    printf("[%d, %d] required %d \n", row, col, required);
+#endif
+
+    // wait for the above rows to complete
     if (threadIdx.x == 0)
       while (atomicAdd(&completed_block, 0) < required) {
         ;
@@ -144,12 +150,11 @@ double V2_seam(int *in, int height, int width, int *out, int blocksize) {
   int *d_trace;
   CHECK(cudaMalloc(&d_trace, height * width * sizeof(int)));
 
-  dim3 grid_size((width - 1) / blocksize + 1, (height - 1) / blocksize + 1);
-  dim3 block_size(blocksize, blocksize);
+  dim3 grid_size((width - 1)  / blocksize + 1, height);
+  dim3 block_size(blocksize, 1);
 
   int val = 0; // because we need to start at 0
   CHECK(cudaMemcpyToSymbol(bCount, &val, sizeof(int), 0));
-
   CHECK(cudaMemcpyToSymbol(completed_block, &val, sizeof(int), size_t(0)));
 
   V2_dp_kernel<<<grid_size, block_size>>>(d_in, height, width, d_dp, d_trace);

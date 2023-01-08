@@ -136,7 +136,7 @@ void rand_test(int ver, int num = 2) {
     if (ver == 1) 
       V1_seam(A, 128, 128, gpu_ans);
     else  if (ver == 2)
-      V2_seam(A, 128, 128, gpu_ans);
+      V2_seam(A, 128, 128, gpu_ans, 64);
 
     host_dp_seam(A, 128, 128, host_ans);
     check_answer(gpu_ans, host_ans, 128, i);
