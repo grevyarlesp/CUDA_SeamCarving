@@ -7,7 +7,7 @@ double V1_seam(int *in, int n, int m, int *out, int blocksize  = 256);
 
 // 1024 max
 void V1_grayscale(unsigned char *in, int height, int width, int *out, int blocksize = 32);
-
+int V1_min(int* in, int* ind, int n, int block_size=32);
 
 void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
                    int blocksize = 32);
