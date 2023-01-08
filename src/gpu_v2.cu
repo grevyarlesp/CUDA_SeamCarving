@@ -27,7 +27,7 @@ __global__ void V2_grayscale_kernel(unsigned char *d_in, int num_pixels,
 __global__ void V2_conv_kernel(int *d_in, int height, int width, int *d_out) {}
 
 __device__ int bCount;
-__device__ int completed_block;
+__device__ int* flag;
 
 /*
    Use N * 1 blocks
@@ -82,7 +82,7 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
   } else {
     // calculate required number of threads
     // all threads of previous rows in a strip
-    int required = gridDim.x * row;
+    int required = gridDim.x;
 
 #ifdef V2_DEBUG
     printf("[%d, %d] required %d \n", row, col, required);
@@ -90,7 +90,7 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
 
     // wait for the above rows to complete
     if (threadIdx.x == 0)
-      while (atomicAdd(&completed_block, 0) < required) {
+      while (atomicAdd(flag + row - 1, 0) < required) {
         ;
       }
 
@@ -127,8 +127,10 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
   __syncthreads();
 
   if (threadIdx.x == 0)
-    atomicAdd(&completed_block, 1);
-
+    atomicAdd(flag + row, 1);
+#ifdef V2_DEBUG
+    printf("[%d, %d] done \n", row, col);
+#endif
 }
 
 // must : blocksize = 256 x 1
@@ -155,12 +157,22 @@ double V2_seam(int *in, int height, int width, int *out, int blocksize) {
 
   int val = 0; // because we need to start at 0
   CHECK(cudaMemcpyToSymbol(bCount, &val, sizeof(int), 0));
-  CHECK(cudaMemcpyToSymbol(completed_block, &val, sizeof(int), size_t(0)));
+
+
+  int *host_ptr;
+  CHECK(cudaMalloc(&host_ptr, sizeof(int) * grid_size.y));
+  CHECK(cudaMemset(host_ptr, 0, sizeof(int) * grid_size.y));
+
+  CHECK(cudaMemcpyToSymbol(flag, &host_ptr, sizeof(int*), size_t(0), cudaMemcpyHostToDevice));
 
   V2_dp_kernel<<<grid_size, block_size>>>(d_in, height, width, d_dp, d_trace);
 
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
+
+#ifdef V2_DEBUG 
+  cerr << "Tracing\h";
+#endif
 
   // trace back
   int *trace = new int[height * width];
@@ -183,6 +195,12 @@ double V2_seam(int *in, int height, int width, int *out, int blocksize) {
       pos = trace[i * width + pos];
   }
 
+#ifdef V2_DEBUG 
+  cerr << "Done on nost\h";
+#endif
+
+
+
   timer.Stop();
 
   delete[] trace;
@@ -190,6 +208,7 @@ double V2_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_dp));
   CHECK(cudaFree(d_trace));
+  CHECK(cudaFree(host_ptr));
 
   return timer.Elapsed();
 }

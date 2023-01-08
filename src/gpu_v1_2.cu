@@ -8,13 +8,10 @@ using std::cerr;
 /*
    Dynamic programming kernel for finding seam
    */
-
 __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
                              int row) {
 
   int col = blockIdx.x * blockDim.x + threadIdx.x;
-
-  extern __shared__ int s_dp[];
 
   if (col >= width)
     return;
@@ -24,24 +21,15 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
     return;
   }
 
-  s_dp[threadIdx.x] = d_dp[(row - 1) * width + col];
-
-
   int ans = -1;
   int tr = -1;
-
-  int block_left = blockDim.x * blockIdx.x;
-  int block_right = (blockDim.x + 1) * blockIdx.x;
 
   for (int j = -1; j <= 1; ++j) {
     int col_ = col + j;
     if (col_ < 0 || col_ >= width)
       continue;
 
-    int tmp;
-    if (col < block_left || col >= block_right)
-      tmp = d_dp[(row - 1) * width + col_];
-    else tmp = s_dp[block_left + col];
+    int tmp = d_dp[(row - 1) * width + col_];
 
     if (ans == -1 || tmp < ans) {
       ans = tmp;
@@ -59,7 +47,6 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
   printf("DP %d %d %d\n", row, col, d_dp[row * width + col]);
 #endif
 }
-
 
 /*
 Input: n * m energy map

@@ -298,6 +298,8 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 #endif
 }
 
+
+
 /*
 Input: n * m energy map
 Output: result + time
