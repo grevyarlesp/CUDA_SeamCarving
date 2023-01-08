@@ -1,4 +1,5 @@
 #include "gpu_v1.h"
+#include "gpu_v1_1.h"
 #include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
@@ -61,7 +62,7 @@ void host_test() {
   }
 }
 
-void gpu_test(int ver = 1) {
+void gpu_test(int ver, int minor) {
   if (ver == 1) {
     for (size_t i = 0; i < dat.size(); ++i) {
 
@@ -71,7 +72,11 @@ void gpu_test(int ver = 1) {
       pair<int, int> s = dat_sz[i];
       int *act = new int[s.X];
 
-      V1_seam(V.data(), s.X, s.Y, act);
+      if (minor == 0)
+        V1_seam(V.data(), s.X, s.Y, act);
+      else if (minor == 1)
+        V1_1_seam(V.data(), s.X, s.Y, act);
+
       check_answer(act, ans[i].data(), s.X, i);
       delete[] act;
     }
@@ -91,7 +96,7 @@ void gpu_test(int ver = 1) {
   }
 }
 
-void rand_test_2(int ver, int num = 2) {
+void rand_test_2(int ver, int minor, int num = 2) {
   int H = 64;
   int W = 32;
 
@@ -121,7 +126,7 @@ void rand_test_2(int ver, int num = 2) {
 
 
 
-void rand_test(int ver, int num = 2) {
+void rand_test(int ver, int minor, int num = 2) {
   srand(111222);
 
   cout << "Random test" << '\n';
@@ -150,17 +155,21 @@ void rand_test(int ver, int num = 2) {
 
 
 int main(int argc, char **argv) {
-  int ver = 0;
+  int ver = 0, minor = 0;
   if (argc == 2) {
     ver = atoi(argv[1]);
   }
+  if (argc == 3)
+    minor = atoi(argv[2]);
   if (ver == 0) {
     host_test();
   } else {
     std::cout << "Testing Gpu ver " << ver << '\n';
-    std::cout << "Normal test" << ver << '\n';
-    gpu_test(ver);
-    rand_test(ver, 1);
+    std::cout << "Normal test " << ver << '\n';
+    gpu_test(ver, minor);
+
+    std::cout << "Random test " << ver << '\n';
+    rand_test(ver, minor, 1);
   }
   return 0;
 }

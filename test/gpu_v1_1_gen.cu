@@ -2,6 +2,7 @@
 // Using the GPU to generate for certain parts
 #include "gpu_utils.h"
 #include "gpu_v1.h"
+#include "gpu_v1_1.h"
 #include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
@@ -21,7 +22,7 @@ using std::string;
    Output result for each steps
    */
 
-void test_v2_seam(string in_path, bool write_to_file = false) {
+void test_v1_seam(string in_path, int blocksize, bool write_to_file = false) {
   int width, height, channels;
 
   cout << "Reading from " << in_path << '\n';
@@ -55,6 +56,8 @@ void test_v2_seam(string in_path, bool write_to_file = false) {
   cout << "Channels " << channels << " width " << width << " height " << height
        << '\n';
 
+  cout << "Block size" << ' ' << blocksize << '\n';
+
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
 
@@ -64,7 +67,7 @@ void test_v2_seam(string in_path, bool write_to_file = false) {
                    cudaMemcpyDeviceToHost));
 
   if (write_to_file) {
-    string out_path = add_ext(in_path, "gray_v2");
+    string out_path = add_ext(in_path, "gray_v1_1");
     unsigned char *ugray = to_uchar(gray, height * width);
     stbi_write_png(out_path.c_str(), width, height, 1, ugray, width * 1);
     delete[] ugray;
@@ -72,25 +75,22 @@ void test_v2_seam(string in_path, bool write_to_file = false) {
 
   int *emap = new int[height * width];
 
-  // TODO: update kernel
   V1_conv(gray, height, width, emap);
 
   int *seam = new int[height];
-  V2_seam(emap, height, width, seam);
+  V1_1_seam(emap, height, width, seam, blocksize);
 
   timer.Stop();
 
-  cout << "Completed in " << timer.Elapsed() << '\n';
-
   host_highlight_seam(img, height, width, seam);
 
-  
-  string out_path = add_ext(in_path, "seam_v2");
+  string out_path = add_ext(in_path, "seam_v1_1");
 
   stbi_write_png(out_path.c_str(), width, height, 3, img, width * 3);
+
+  cout << "Complete in " << timer.Elapsed() << '\n';
+
 }
-
-
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -99,7 +99,12 @@ int main(int argc, char **argv) {
 
   string file_path(argv[1]);
 
+  int blocksize = 256;
+  if (argc > 2) 
+    blocksize = atoi(argv[2]);
+    
+
   // grayscale(file_path);
 
-  test_v2_seam(file_path, true);
+  test_v1_seam(file_path, blocksize);
 }

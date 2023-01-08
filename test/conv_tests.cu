@@ -18,11 +18,13 @@
 
 using namespace std;
 
+/*
 const int SOBEL_X[] = {
     1, 0, -1, 2, 0, -2, 1, 0, -1,
 };
 
 const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
+*/
 
 // 4 * 6
 vector<vector<int>> dat = {{255, 166, 133, 222, 14, 9,  22, 11,
