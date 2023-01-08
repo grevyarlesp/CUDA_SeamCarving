@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cassert>
+
 #include <cstdlib>
+#include "gpu_utils.h"
 #include <cwchar>
 #include <math.h>
 #include <stdio.h>
@@ -132,8 +134,13 @@ void host_full(unsigned char *to_process, int height, int width, int *seam) {
   int *energy_map = new int[height * width];
   host_sobel_conv(gray, height, width, energy_map);
 
+  GpuTimer timer;
+  timer.Start();
   // seam = [height]
   host_dp_seam(energy_map, height, width, seam);
+  timer.Stop();
+
+  cout << "Seam time" << ' ' << timer.Elapsed() << '\n';
 
   // out: 3 * width * height
 

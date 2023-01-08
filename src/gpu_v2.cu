@@ -103,24 +103,32 @@ __global__ void V2_dp_kernel(int *d_in, int height, int width,
     int ans = -1;
 
     int left = col - 1;
-    if (left >= 0) {
-      ans = d_dp[(row - 1) * width + left];
-      d_trace[pos] = left;
-    }
 
+    
     int middle = col;
-    if (ans == -1 || ans > d_dp[(row - 1) * width + middle]) {
-      ans = d_dp[(row - 1) * width + middle];
-      d_trace[pos] = middle;
+    ans = d_dp[(row - 1) * width + middle];
+    int tr = middle;
+
+    int tmp;
+    if (left >= 0) {
+      tmp = d_dp[(row - 1) * width + left];
+      if (ans > tmp) {
+        ans = tmp;
+        tr = left;
+      }
     }
 
     int right = col + 1;
-    if (right < width && (ans == -1 || ans > d_dp[(row - 1) * width + right])) {
-      ans = d_dp[(row - 1) * width + right];
-      d_trace[pos] = right;
+    if (right < width) {
+      tmp = d_dp[(row - 1) * width + right];
+      if (ans > tmp) {
+        ans = tmp;
+        tr = right;
+      }
     }
 
     d_dp[pos] = ans + d_in[pos];
+    d_trace[pos] = tr;
     __threadfence();
   }
 
