@@ -45,8 +45,8 @@ file(GLOB all_HDRS
         "${PROJECT_SOURCE_DIR}/include/*.cuh"
         )
 
-list(REMOVE_ITEM all_HDRS ${PROJECT_SOURCE_DIR}/src/stb_image.h)
-list(REMOVE_ITEM all_HDRS ${PROJECT_SOURCE_DIR}/src/stb_image_write.h)
+list(REMOVE_ITEM all_HDRS ${PROJECT_SOURCE_DIR}/include/stb_image.h)
+list(REMOVE_ITEM all_HDRS ${PROJECT_SOURCE_DIR}/include/stb_image_write.h)
 
 file(GLOB stbimageHDRS
         "${PROJECT_SOURCE_DIR}/include/stb_image*"
@@ -93,6 +93,10 @@ target_link_libraries(host_answer_gen PRIVATE libs stbimage)
 add_executable(gpu_v1_gen ${PROJECT_SOURCE_DIR}/test/gpu_v1_gen.cu)
 set_target_properties(gpu_v1_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(gpu_v1_gen PRIVATE libs stbimage)
+
+add_executable(gpu_v1_1_gen ${PROJECT_SOURCE_DIR}/test/gpu_v1_1_gen.cu)
+set_target_properties(gpu_v1_1_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(gpu_v1_1_gen PRIVATE libs stbimage)
 
 add_executable(gpu_v2_gen ${PROJECT_SOURCE_DIR}/test/gpu_v2_gen.cu)
 set_target_properties(gpu_v2_gen PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

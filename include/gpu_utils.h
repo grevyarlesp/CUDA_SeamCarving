@@ -2,6 +2,7 @@
 #define GPU_UTILS_H
 
 #include <cstdio>
+#include <iostream>
 
 #define CHECK(call)                                                            \
   {                                                                            \
@@ -13,6 +14,16 @@
       exit(1);                                                                 \
     }                                                                          \
   }
+
+#define PROFILE(call)                                                          \
+GpuTimer _;                                                   \
+  {                                                                            \
+    _.Start();                                                                 \
+    call;                                                                      \
+    _.stop();                                                                  \
+    std::cout << "Elapsed " << _.elapsed << "\n";                              \
+  }\
+
 
 struct GpuTimer {
   cudaEvent_t start;

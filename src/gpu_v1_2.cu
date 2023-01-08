@@ -8,7 +8,7 @@ using std::cerr;
 /*
    Dynamic programming kernel for finding seam
    */
-__global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
+__global__ void V1_2_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
                              int row) {
 
   int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -52,7 +52,7 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 Input: n * m energy map
 Output: result + time
 */
-double V1_1_seam(int *in, int height, int width, int *out, int blocksize, int nStreams) {
+double V1_2_seam(int *in, int height, int width, int *out, int blocksize, int nStreams) {
 
 #ifdef V1_DEBUG
   cerr << "==================================\n";
@@ -93,7 +93,7 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize, int nS
 #ifdef V1_DEBUG
     cerr << "Row " << i << '\n';
 #endif
-    V1_1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, width, i);
+    V1_2_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, width, i);
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
   }

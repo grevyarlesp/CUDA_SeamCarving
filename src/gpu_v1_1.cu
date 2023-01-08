@@ -1,5 +1,6 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
+#include "gpu_v1_1.h"
 #include <algorithm>
 #include <iostream>
 
@@ -25,6 +26,7 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
   }
 
   s_dp[threadIdx.x] = d_dp[(row - 1) * width + col];
+  __syncthreads();
 
 
   int ans = -1;
@@ -39,9 +41,17 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
       continue;
 
     int tmp;
-    if (col < block_left || col >= block_right)
+    if (col_ < block_left || col_ >= block_right)
       tmp = d_dp[(row - 1) * width + col_];
-    else tmp = s_dp[block_left + col];
+    else {
+
+#ifdef V1_1_DEBUG
+  printf("%d %d %d\n", row, col, d_in[row * width + col]);
+#endif
+  tmp = s_dp[col_ - block_left];
+
+    }
+
 
     if (ans == -1 || tmp < ans) {
       ans = tmp;
@@ -51,11 +61,11 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 
   d_trace[row * width + col] = tr;
 
-#ifdef V1_DEBUG
+#ifdef V1_1_DEBUG
   printf("%d %d %d\n", row, col, d_in[row * width + col]);
 #endif
   d_dp[row * width + col] = ans + d_in[row * width + col];
-#ifdef V1_DEBUG
+#ifdef V1_1_DEBUG
   printf("DP %d %d %d\n", row, col, d_dp[row * width + col]);
 #endif
 }
@@ -65,9 +75,10 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
 Input: n * m energy map
 Output: result + time
 */
-double V1_1_seam(int *in, int height, int width, int *out, int blocksize, int nStreams) {
 
-#ifdef V1_DEBUG
+double V1_1_seam(int *in, int height, int width, int *out, int blocksize) {
+
+#ifdef V1_1_DEBUG
   cerr << "==================================\n";
   cerr << "Debug for V1_seam" << '\n';
   cerr << "==================================\n";
@@ -95,18 +106,18 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize, int nS
 
   int *trace = new int[height * width];
 
-  CHECK(cudaHostRegister(in, matBytes, cudaHostRegisterDefault));
-  CHECK(cudaHostRegister(trace, matBytes, cudaHostRegisterDefault));
+  // CHECK(cudaHostRegister(in, matBytes, cudaHostRegisterDefault));
+  // CHECK(cudaHostRegister(trace, matBytes, cudaHostRegisterDefault));
 
 
-  cudaStream_t *streams;
-  streams = (cudaStream_t *)malloc(sizeof(cudaStream_t) * nStreams);
+  // cudaStream_t *streams;
+  // streams = (cudaStream_t *)malloc(sizeof(cudaStream_t) * nStreams);
 
   for (int i = 0; i < height; ++i) {
-#ifdef V1_DEBUG
+#ifdef V1_1_DEBUG
     cerr << "Row " << i << '\n';
 #endif
-    V1_1_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp, d_trace, width, i);
+    V1_1_dp_kernel<<<grid_size, block_size, blocksize * sizeof(int)>>>(d_in, d_dp, d_trace, width, i);
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
   }
@@ -123,7 +134,7 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize, int nS
   // fix trace
   int pos = (int)(std::min_element(dp, dp + width) - dp);
 
-#ifdef V1_DEBUG
+#ifdef V1_1_DEBUG
   cerr << "Pos = " << pos << '\n';
 #endif
 

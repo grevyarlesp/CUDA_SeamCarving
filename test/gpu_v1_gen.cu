@@ -2,6 +2,7 @@
 // Using the GPU to generate for certain parts
 #include "gpu_utils.h"
 #include "gpu_v1.h"
+#include "gpu_v1_1.h"
 #include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
@@ -21,7 +22,7 @@ using std::string;
    Output result for each steps
    */
 
-void test_v1_seam(string in_path, int blocksize, bool write_to_file = false) {
+void test_v1_seam(string in_path, int minorver, int blocksize, bool write_to_file = false) {
   int width, height, channels;
 
   cout << "Reading from " << in_path << '\n';
@@ -77,7 +78,20 @@ void test_v1_seam(string in_path, int blocksize, bool write_to_file = false) {
   V1_conv(gray, height, width, emap);
 
   int *seam = new int[height];
-  V1_seam(emap, height, width, seam, blocksize);
+
+  double tseam;
+  if (minorver == 0) {
+    cout << "Ver 1.0\n";
+
+    tseam = V1_seam(emap, height, width, seam, blocksize);
+  } else if (minorver == 1) {
+
+    cout << "Ver 1.1\n";
+    tseam = V1_1_seam(emap, height, width, seam, blocksize);
+
+  } 
+
+  cout << "Seam time = "  << tseam << '\n';
 
   timer.Stop();
 
@@ -98,12 +112,17 @@ int main(int argc, char **argv) {
 
   string file_path(argv[1]);
 
-  int blocksize = 256;
+  int minorver = 0;
+
   if (argc > 2) 
-    blocksize = atoi(argv[2]);
+    minorver = atoi(argv[2]);
+
+  int blocksize = 256;
+  if (argc > 3) 
+    blocksize = atoi(argv[3]);
     
 
   // grayscale(file_path);
 
-  test_v1_seam(file_path, blocksize);
+  test_v1_seam(file_path, minorver, blocksize);
 }
