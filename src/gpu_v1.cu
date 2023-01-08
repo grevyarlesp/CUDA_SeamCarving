@@ -270,11 +270,13 @@ __global__ void V1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
     d_dp[col] = d_in[col];
     return;
   }
+  int pos = row * width + col;
+  int prev = pos - width;
 
-  int ans = -1;
-  int tr = -1;
+  int ans = d_dp[prev];
+  int tr = col;
 
-  for (int j = -1; j <= 1; ++j) {
+  for (int j = -1; j <= 1; j += 2) {
     int col_ = col + j;
     if (col_ < 0 || col_ >= width)
       continue;

@@ -11,7 +11,7 @@ using std::cerr;
    */
 
 __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
-                             int row) {
+                               int row) {
 
   int col = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -28,14 +28,15 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
   s_dp[threadIdx.x] = d_dp[(row - 1) * width + col];
   __syncthreads();
 
-
-  int ans = -1;
-  int tr = -1;
-
   int block_left = blockDim.x * blockIdx.x;
   int block_right = (blockDim.x + 1) * blockIdx.x;
+  int pos = row * width + col;
+  int prev = pos - width;
 
-  for (int j = -1; j <= 1; ++j) {
+  int ans = d_dp[prev];
+  int tr = col;
+
+  for (int j = -1; j <= 1; ++j += 2) {
     int col_ = col + j;
     if (col_ < 0 || col_ >= width)
       continue;
@@ -44,14 +45,8 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
     if (col_ < block_left || col_ >= block_right)
       tmp = d_dp[(row - 1) * width + col_];
     else {
-
-#ifdef V1_1_DEBUG
-  printf("%d %d %d\n", row, col, d_in[row * width + col]);
-#endif
-  tmp = s_dp[col_ - block_left];
-
+      tmp = s_dp[col_ - block_left];
     }
-
 
     if (ans == -1 || tmp < ans) {
       ans = tmp;
@@ -69,7 +64,6 @@ __global__ void V1_1_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
   printf("DP %d %d %d\n", row, col, d_dp[row * width + col]);
 #endif
 }
-
 
 /*
 Input: n * m energy map
@@ -94,8 +88,7 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize) {
 
   int *d_in;
   CHECK(cudaMalloc(&d_in, matBytes));
-  CHECK(cudaMemcpy(d_in, in, matBytes,
-                   cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpy(d_in, in, matBytes, cudaMemcpyHostToDevice));
 
   int *d_dp;
   CHECK(cudaMalloc(&d_dp, matBytes));
@@ -103,12 +96,10 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize) {
   int *d_trace;
   CHECK(cudaMalloc(&d_trace, matBytes));
 
-
   int *trace = new int[height * width];
 
   // CHECK(cudaHostRegister(in, matBytes, cudaHostRegisterDefault));
   // CHECK(cudaHostRegister(trace, matBytes, cudaHostRegisterDefault));
-
 
   // cudaStream_t *streams;
   // streams = (cudaStream_t *)malloc(sizeof(cudaStream_t) * nStreams);
@@ -117,7 +108,8 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize) {
 #ifdef V1_1_DEBUG
     cerr << "Row " << i << '\n';
 #endif
-    V1_1_dp_kernel<<<grid_size, block_size, blocksize * sizeof(int)>>>(d_in, d_dp, d_trace, width, i);
+    V1_1_dp_kernel<<<grid_size, block_size, blocksize * sizeof(int)>>>(
+        d_in, d_dp, d_trace, width, i);
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
   }
@@ -153,7 +145,6 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaFree(d_dp));
   CHECK(cudaFree(d_trace));
 
-
 #ifdef DEBUG
   cerr << "End of debug for V1_seam" << '\n';
   cerr << "==================================\n";
@@ -161,5 +152,3 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize) {
 
   return timer.Elapsed();
 }
-
-

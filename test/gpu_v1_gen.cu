@@ -3,6 +3,7 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
 #include "gpu_v1_1.h"
+#include "gpu_v1_2.h"
 #include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
@@ -89,7 +90,12 @@ void test_v1_seam(string in_path, int minorver, int blocksize, bool write_to_fil
     cout << "Ver 1.1\n";
     tseam = V1_1_seam(emap, height, width, seam, blocksize);
 
-  } 
+  }  else if (minorver == 2) {
+
+    cout << "Ver 1.2\n";
+    tseam = V1_2_seam(emap, height, width, seam, blocksize, 4);
+    
+  }
 
   cout << "Seam time = "  << tseam << '\n';
 

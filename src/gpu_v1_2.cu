@@ -1,5 +1,6 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
+#include "gpu_v1_2.h"
 #include <algorithm>
 #include <iostream>
 
@@ -9,7 +10,7 @@ using std::cerr;
    Dynamic programming kernel for finding seam
    */
 __global__ void V1_2_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
-                             int row) {
+                               int row) {
 
   int col = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -38,21 +39,15 @@ __global__ void V1_2_dp_kernel(int *d_in, int *d_dp, int *d_trace, int width,
   }
 
   d_trace[row * width + col] = tr;
-
-#ifdef V1_DEBUG
-  printf("%d %d %d\n", row, col, d_in[row * width + col]);
-#endif
   d_dp[row * width + col] = ans + d_in[row * width + col];
-#ifdef V1_DEBUG
-  printf("DP %d %d %d\n", row, col, d_dp[row * width + col]);
-#endif
 }
 
 /*
 Input: n * m energy map
 Output: result + time
 */
-double V1_2_seam(int *in, int height, int width, int *out, int blocksize, int nStreams) {
+double V1_2_seam(int *in, int height, int width, int *out, int blocksize,
+                 int nStreams) {
 
 #ifdef V1_DEBUG
   cerr << "==================================\n";
@@ -70,8 +65,7 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize, int nS
 
   int *d_in;
   CHECK(cudaMalloc(&d_in, matBytes));
-  CHECK(cudaMemcpy(d_in, in, matBytes,
-                   cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpy(d_in, in, matBytes, cudaMemcpyHostToDevice));
 
   int *d_dp;
   CHECK(cudaMalloc(&d_dp, matBytes));
@@ -79,12 +73,10 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize, int nS
   int *d_trace;
   CHECK(cudaMalloc(&d_trace, matBytes));
 
-
   int *trace = new int[height * width];
 
   CHECK(cudaHostRegister(in, matBytes, cudaHostRegisterDefault));
   CHECK(cudaHostRegister(trace, matBytes, cudaHostRegisterDefault));
-
 
   cudaStream_t *streams;
   streams = (cudaStream_t *)malloc(sizeof(cudaStream_t) * nStreams);
@@ -129,7 +121,6 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize, int nS
   CHECK(cudaFree(d_dp));
   CHECK(cudaFree(d_trace));
 
-
 #ifdef DEBUG
   cerr << "End of debug for V1_seam" << '\n';
   cerr << "==================================\n";
@@ -137,5 +128,3 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize, int nS
 
   return timer.Elapsed();
 }
-
-

@@ -138,8 +138,14 @@ void rand_test(int ver, int minor, int num = 2) {
       A[i] = rand() % 4000;
     }
 
-    if (ver == 1) 
-      V1_seam(A, 128, 128, gpu_ans);
+    if (ver == 1) {
+      if (minor == 0)
+
+        V1_seam(A, 128, 128, gpu_ans);
+      else if (minor == 1)
+
+        V1_1_seam(A, 128, 128, gpu_ans);
+    }
     else  if (ver == 2)
       V2_seam(A, 128, 128, gpu_ans, 64);
 
@@ -156,11 +162,12 @@ void rand_test(int ver, int minor, int num = 2) {
 
 int main(int argc, char **argv) {
   int ver = 0, minor = 0;
-  if (argc == 2) {
+  if (argc > 1) {
     ver = atoi(argv[1]);
   }
-  if (argc == 3)
+  if (argc > 2)
     minor = atoi(argv[2]);
+
   if (ver == 0) {
     host_test();
   } else {
