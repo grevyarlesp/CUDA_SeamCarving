@@ -1,5 +1,6 @@
 #include "gpu_v1.h"
 #include "gpu_v1_1.h"
+#include "gpu_v1_2.h"
 #include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
@@ -44,7 +45,7 @@ vector<vector<int>> dat = {
 
 vector<vector<int>> ans = {{2, 1, 2, 2},
                            {1, 2, 1, 2, 2},
-                           {0, 0, 0, 1, 2},
+                           {2, 2, 2, 2, 2},
                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 
 void host_test() {
@@ -76,6 +77,8 @@ void gpu_test(int ver, int minor) {
         V1_seam(V.data(), s.X, s.Y, act);
       else if (minor == 1)
         V1_1_seam(V.data(), s.X, s.Y, act);
+      else if (minor == 2)
+        V1_2_seam(V.data(), s.X, s.Y, act);
 
       check_answer(act, ans[i].data(), s.X, i);
       delete[] act;
@@ -140,11 +143,11 @@ void rand_test(int ver, int minor, int num = 2) {
 
     if (ver == 1) {
       if (minor == 0)
-
         V1_seam(A, 128, 128, gpu_ans);
       else if (minor == 1)
-
         V1_1_seam(A, 128, 128, gpu_ans);
+      else if (minor == 2)
+        V1_2_seam(A, 128, 128, gpu_ans);
     }
     else  if (ver == 2)
       V2_seam(A, 128, 128, gpu_ans, 64);

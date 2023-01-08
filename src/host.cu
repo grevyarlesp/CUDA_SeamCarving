@@ -94,7 +94,11 @@ void host_dp_seam(int *in, int height, int width, int *out) {
         dp[i][j] = in[j];
         continue;
       }
-      for (int k = -1; k <= 1; ++k) {
+
+      dp[i][j] = dp[i - 1][j];
+      trace[i][j] = j;
+
+      for (int k = -1; k <= 1; k += 2) {
         int prev_col = j + k;
         if (prev_col < 0 || prev_col >= width)
           continue;

@@ -93,7 +93,7 @@ void test_v1_seam(string in_path, int minorver, int blocksize, bool write_to_fil
   }  else if (minorver == 2) {
 
     cout << "Ver 1.2\n";
-    tseam = V1_2_seam(emap, height, width, seam, blocksize, 4);
+    tseam = V1_2_seam(emap, height, width, seam, blocksize);
     
   }
 

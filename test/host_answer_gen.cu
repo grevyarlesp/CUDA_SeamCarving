@@ -69,7 +69,6 @@ void seam(string in_path) {
       stbi_load(in_path.c_str(), &width, &height, &channels, 3);
   assert(channels == 3);
 
-
   cout << "Channels "  << channels << " width " << width << " height "
        << height << '\n';
 
