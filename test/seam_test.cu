@@ -1,6 +1,7 @@
 #include "gpu_v1.h"
 #include "gpu_v1_1.h"
 #include "gpu_v1_2.h"
+#include "gpu_v1_3.h"
 #include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
@@ -79,6 +80,8 @@ void gpu_test(int ver, int minor) {
         V1_1_seam(V.data(), s.X, s.Y, act);
       else if (minor == 2)
         V1_2_seam(V.data(), s.X, s.Y, act);
+      else if (minor == 3)
+        V1_3_seam(V.data(), s.X, s.Y, act);
 
       check_answer(act, ans[i].data(), s.X, i);
       delete[] act;
@@ -148,6 +151,8 @@ void rand_test(int ver, int minor, int num = 2) {
         V1_1_seam(A, 128, 128, gpu_ans);
       else if (minor == 2)
         V1_2_seam(A, 128, 128, gpu_ans);
+      else if (minor == 3)
+        V1_3_seam(A, 128, 128, gpu_ans);
     }
     else  if (ver == 2)
       V2_seam(A, 128, 128, gpu_ans, 64);

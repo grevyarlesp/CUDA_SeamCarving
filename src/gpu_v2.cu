@@ -35,14 +35,15 @@ __device__ int* flag;
 
 __global__ void V2_dp_kernel(int *d_in, int height, int width,
                              volatile int *d_dp, int *d_trace) {
-  __shared__ int bi;
+  __shared__ int sbi;
 
   if (threadIdx.x == 0 && threadIdx.y == 0) {
-    bi = atomicAdd(&bCount, 1);
+    sbi = atomicAdd(&bCount, 1);
 #ifdef V2_DEBUG
     printf("Block %d\n", bi);
 #endif
   }
+  const int bi = sbi;
 
   __syncthreads();
 
@@ -221,5 +222,3 @@ double V2_seam(int *in, int height, int width, int *out, int blocksize) {
   return timer.Elapsed();
 }
 
-// tracing so we don't have to copy
-__global__ void trace_kernel(int *d_trace) {}

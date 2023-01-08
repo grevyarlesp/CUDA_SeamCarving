@@ -9,8 +9,8 @@ using std::cerr;
 /*
    Dynamic programming kernel for finding seam
    */
-__global__ void V1_2_dp_kernel(int *d_in, int *d_dp_prev, int *d_dp_cur,
-                               int *d_trace, int width, int row) {
+__global__ void V1_3_dp_kernel(int *d_in, int *d_dp_prev, int *d_dp_cur,
+                               int *d_trace, int height, int width, int row, int *d_out) {
 
   int col = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -43,13 +43,28 @@ __global__ void V1_2_dp_kernel(int *d_in, int *d_dp_prev, int *d_dp_cur,
 
   d_trace[pos] = tr;
   d_dp_cur[col] = ans + d_in[pos];
+
+  if (row == height - 1) {
+
+    int pos = col;
+
+    for (int i = height - 1; i >= 0; --i) {
+      d_out[col * height + i] = pos;
+      if (i > 0) {
+        pos = d_trace[i * width + pos];
+      }
+    }
+  }
 }
+
+int completed_trace = 0;
+
 
 /*
 Input: n * m energy map
 Output: result + time
 */
-double V1_2_seam(int *in, int height, int width, int *out, int blocksize) {
+double V1_3_seam(int *in, int height, int width, int *out, int blocksize) {
 
   GpuTimer timer;
   timer.Start();
@@ -77,6 +92,9 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize) {
   int *d_trace;
   CHECK(cudaMalloc(&d_trace, matBytes));
 
+  int *d_out;
+  CHECK(cudaMalloc(&d_out, matBytes));
+
   int *trace = new int[height * width];
 
   // CHECK(cudaHostRegister(in, matBytes, cudaHostRegisterDefault));
@@ -86,8 +104,8 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize) {
   // streams = (cudaStream_t *)malloc(sizeof(cudaStream_t) * nStreams);
 
   for (int i = 0, start = 0; i < height; ++i, start+=width) {
-    V1_2_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp_prev, d_dp_cur,
-                                              d_trace, width, i);
+    V1_3_dp_kernel<<<grid_size, block_size>>>(d_in, d_dp_prev, d_dp_cur,
+                                              d_trace, height, width, i, d_out);
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
 
@@ -103,33 +121,21 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize) {
 
   int pos = (int)(std::min_element(dp, dp + width) - dp);
 
-#if V1_2_DEBUG
+#if V1_3_DEBUG
   std::cout << "Tracing\n";
 #endif
-  for (int i = height - 1; i >= 0; --i) {
-    out[i] = pos;
-#if V1_2_DEBUG
-    cerr << i << ' ' << pos << ' ' << trace[i * width + pos] << '\n';
-#endif
-    if (i > 0)
-      pos = trace[i * width + pos];
-  }
 
+  CHECK(cudaMemcpy(out, d_out + pos * height, height * sizeof(int), cudaMemcpyDeviceToHost));
   timer.Stop();
 
   delete[] trace;
   delete[] dp;
   CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_dp_cur));
+  CHECK(cudaFree(d_out));
   CHECK(cudaFree(d_dp_prev));
   CHECK(cudaFree(d_trace));
   return timer.Elapsed();
 }
 
 
-
-double remove_seam(unsigned char *img, int num) {
-
-    
-
-}
