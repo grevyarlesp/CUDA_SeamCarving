@@ -1,6 +1,7 @@
 #include "gpu_utils.h"
 #include "gpu_v1.h"
 #include "gpu_v1_2.h"
+#include "gpu_v1_3.h"
 #include <algorithm>
 #include <iostream>
 
