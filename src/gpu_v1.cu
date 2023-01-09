@@ -233,22 +233,22 @@ void V1_conv(int *in, int height, int width, int *out, int block_size) {
   CHECK(cudaMemcpyToSymbol(kern, SOBEL_X, kernSize));
   V1_conv_kernel<<<gridSize, blockSize, TILE_DIM * TILE_DIM * sizeof(int)>>>(
       d_in, width, height, d_temp1);
-  cudaDeviceSynchronize();
-  cudaGetLastError();
+  CHECK(cudaDeviceSynchronize());
+  CHECK(cudaGetLastError());
 
   // Sobel Y
   CHECK(cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize));
   V1_conv_kernel<<<gridSize, blockSize, TILE_DIM * TILE_DIM * sizeof(int)>>>(
       d_in, width, height, d_temp2);
-  cudaDeviceSynchronize();
-  cudaGetLastError();
+  CHECK(cudaDeviceSynchronize());
+  CHECK(cudaGetLastError());
 
   // Combine
   V1_sum<<<gridSize, blockSize>>>(d_temp1, d_temp2, width, height, d_out);
-  cudaDeviceSynchronize();
-  cudaGetLastError();
-  cudaMemcpy(out, d_out, width * height * sizeof(int), cudaMemcpyDeviceToHost);
-  cudaFree(d_in);
+  CHECK(cudaDeviceSynchronize());
+  CHECK(cudaGetLastError());
+  CHECK(cudaMemcpy(out, d_out, width * height * sizeof(int), cudaMemcpyDeviceToHost));
+  CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_temp1));
   CHECK(cudaFree(d_temp2));
   CHECK(cudaFree(d_out));
