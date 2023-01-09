@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   } else {
     std::cout << "Testing Gpu ver " << ver << '\n';
     gpu_test(ver);
-    rand_test();
+    rand_test(100);
   }
   return 0;
 }
