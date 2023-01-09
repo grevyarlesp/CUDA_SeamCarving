@@ -83,7 +83,8 @@ __global__ void remove_seam_gray(int *gray, int *d_seam, int height, int width,
   d_out[target_pos] = gray[pos];
 }
 
-void shrink_image(unsigned char *img, int height, int width, int target_width, std::string path) {
+void shrink_image(unsigned char *img, int height, int width, int target_width,
+                  std::string path) {
 
   unsigned char *d_in;
   CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
@@ -111,17 +112,30 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     std::cerr << cur_width << '\n';
 #endif
 
-
     int reduced_width = cur_width - 1;
-#ifdef SHRINK_DEBUG 
-    std::cerr << "Gray hash        :" << calc_hash(gray, height * cur_width) << '\n';
+#ifdef SHRINK_DEBUG
+    std::cerr << "Gray hash        :" << calc_hash(gray, height * cur_width)
+              << '\n';
 #endif
 
     // remove 1 for cur_width
     int *emap = new int[height * cur_width];
     V1_conv(gray, height, cur_width, emap);
+
 #ifdef SHRINK_DEBUG
-      std::cerr << "Energy map hash :" << calc_hash(emap, height * cur_width) << '\n';
+
+    std::cerr << "Energy map hash GPU:" << calc_hash(emap, height * cur_width) << '\n';
+    // Debugging to find the wrong in hash
+    {
+      int *emap = new int[height * cur_width];
+
+      host_sobel_conv(gray, height, cur_width, emap);
+
+      std::cerr << "Energy map hash HOST:" << calc_hash(emap, height * cur_width) << '\n';
+
+    }
+
+
 #endif
 
     CHECK(cudaDeviceSynchronize());
@@ -137,7 +151,7 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 #ifdef SHRINK_DEBUG
     {
       std::cerr << "Seam hash       :" << calc_hash(seam, height) << '\n';
-      
+
       // unsigned char *out_seam = new unsigned char[height * cur_width * 3];
       // std::string out_path =
       //     add_ext(path, std::to_string(target_width) + "_" +
@@ -173,8 +187,9 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     // copy back to host
     CHECK(cudaMemcpy(gray, d_gray_rz, height * reduced_width * sizeof(int),
                      cudaMemcpyDeviceToHost));
-#ifdef SHRINK_DEBUG 
-      std::cerr << "Reduced gray hash " << calc_hash(gray, height * reduced_width) << '\n';
+#ifdef SHRINK_DEBUG
+    std::cerr << "Reduced gray hash " << calc_hash(gray, height * reduced_width)
+              << '\n';
 #endif
 
     unsigned char *d_out;
@@ -220,9 +235,8 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     delete[] seam;
   }
 
-
   std::cerr << "Copying\n";
-  unsigned char* out = new unsigned char[3 * height * target_width];
+  unsigned char *out = new unsigned char[3 * height * target_width];
 
   CHECK(cudaMemcpy(out, d_in, 3 * height * target_width * sizeof(unsigned char),
                    cudaMemcpyDeviceToHost));
@@ -237,7 +251,6 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
   CHECK(cudaFree(d_gray));
   delete[] gray;
   delete[] out;
-
 }
 
 int main(int argc, char **argv) {
