@@ -1,9 +1,11 @@
 #include "gpu_utils.h"
-#include <cstdio>
-#include <iostream>
 #include "gpu_v1.h"
 #include "gpu_v1_2.h"
 #include "gpu_v2.h"
+#include "host.h"
+#include "host_utils.h"
+#include <cstdio>
+#include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -14,11 +16,11 @@ using std::cout;
 
 // 3 channels
 // grayscale or RGB.
-__global__ void remove_seam(unsigned char *img, int *d_seam, int height,
-                            int width, unsigned char *d_out, int channels) {
+__global__ void remove_seam_rgb(unsigned char *img, int *d_seam, int height,
+                                int width, unsigned char *d_out) {
 
   int row = blockDim.y * blockIdx.y + threadIdx.y;
-  int col = blockDim.y * blockIdx.y + threadIdx.y;
+  int col = blockDim.x * blockIdx.x + threadIdx.x;
 
   if (row >= height || col >= width)
     return;
@@ -33,25 +35,22 @@ __global__ void remove_seam(unsigned char *img, int *d_seam, int height,
     return;
   }
 
-  if (seam_x > col) {
-    target_col -= 1;
+  if (col > seam_x) {
+    target_col = col - 1;
   }
 
+  // reduced width
   int target_pos = row * (width - 1) + target_col;
 
-  if (channels == 1) {
-    d_out[target_pos] = img[pos];
-  } else {
-    d_out[target_pos] = img[pos];
-    d_out[target_pos + 1] = img[pos + 1];
-    d_out[target_pos + 2] = img[pos + 2];
-  }
+  d_out[target_pos * 3] = img[pos * 3];
+  d_out[target_pos * 3 + 1] = img[pos * 3 + 1];
+  d_out[target_pos * 3 + 2] = img[pos * 3 + 2];
 }
-__global__ void remove_seam_2(int *gray, int *d_seam, int height,
-                            int width, int *d_out) {
+__global__ void remove_seam_gray(int *gray, int *d_seam, int height, int width,
+                                 int *d_out) {
 
   int row = blockDim.y * blockIdx.y + threadIdx.y;
-  int col = blockDim.y * blockIdx.y + threadIdx.y;
+  int col = blockDim.x * blockIdx.x + threadIdx.x;
 
   if (row >= height || col >= width)
     return;
@@ -63,11 +62,12 @@ __global__ void remove_seam_2(int *gray, int *d_seam, int height,
   int target_col = col;
 
   if (seam_x == col) {
+    // remover
     return;
   }
 
-  if (seam_x > col) {
-    target_col -= 1;
+  if (col > seam_x) {
+    target_col = col - 1;
   }
 
   int target_pos = row * (width - 1) + target_col;
@@ -75,42 +75,8 @@ __global__ void remove_seam_2(int *gray, int *d_seam, int height,
   d_out[target_pos] = gray[pos];
 }
 
-
-
-__global__ void add_seam(unsigned char *img, int *d_seam, int height, int width,
-                         unsigned char *d_out, int channels) {
-  int row = blockDim.y * blockIdx.y + threadIdx.y;
-  int col = blockDim.y * blockIdx.y + threadIdx.y;
-
-  if (row >= height || col >= width)
-    return;
-
-  int pos = row * width + col;
-
-  int seam_x = d_seam[col];
-
-  int target_col = col;
-
-  if (seam_x == col) {
-    return;
-  }
-
-  if (seam_x > col) {
-    target_col -= 1;
-  }
-
-  int target_pos = row * (width - 1) + target_col;
-
-  if (channels == 1) {
-    d_out[target_pos] = img[pos];
-  } else {
-    d_out[target_pos] = img[pos];
-    d_out[target_pos + 1] = img[pos + 1];
-    d_out[target_pos + 2] = img[pos + 2];
-  }
-}
-
-void resize_image(unsigned char *img, int height, int width, int target_width) {
+void shrink_image(unsigned char *img, int height, int width, int target_width,
+                  unsigned char *out, std::string path) {
   unsigned char *d_in;
 
   CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
@@ -130,50 +96,130 @@ void resize_image(unsigned char *img, int height, int width, int target_width) {
   CHECK(cudaMemcpy(gray, d_gray, sizeof(int) * height * width,
                    cudaMemcpyDeviceToHost));
 
+  for (int cur_width = width; cur_width > target_width; --cur_width) {
 
-  if (width > target_width) {
-    int to_remove = width - target_width;
+    int reduced_width = cur_width - 1;
 
-    for (int cur_width = width; cur_width > target_width; --cur_width) {
-      int *emap = new int[height * cur_width];
-      V1_conv(gray, height, cur_width, emap);
-      int *seam = new int[height];
-      V1_2_seam(emap, height, cur_width, seam, 512);
-      int *d_seam;
-      CHECK(cudaMalloc(&d_seam, height * sizeof(int)));
+    // remove 1 for cur_width
+    int *emap = new int[height * cur_width];
+    V1_conv(gray, height, cur_width, emap);
 
-      int *d_gray_out;
-      CHECK(cudaMalloc(&d_gray_out, height * (cur_width - 1) * sizeof(int)));
-      remove_seam_2<<<(height - 1) / 32 + 1, (cur_width - 1) / 32 + 1>>>(d_gray, d_seam, height, cur_width, d_gray_out);
+    // seam,
+    int *seam = new int[height];
+    V1_2_seam(emap, height, cur_width, seam, 512);
 
-      CHECK(cudaFree(gray));
-      gray = d_gray_out;
+    int *d_seam;
+    CHECK(cudaMalloc(&d_seam, height * sizeof(int)));
+    CHECK(
+        cudaMemcpy(d_seam, seam, height * sizeof(int), cudaMemcpyHostToDevice));
 
-      unsigned char  *d_in_out;
-      CHECK(cudaMalloc(&d_in_out, height * (cur_width - 1) * sizeof(unsigned char) * 3));
-      remove_seam<<<(height - 1) / 32 + 1, (cur_width - 1) / 32 + 1>>>(d_in, d_seam, height, cur_width, d_in_out, 3);
-      CHECK(cudaFree(d_in));
-      d_in = d_in_out;
-      delete[] emap;
-    }
+#ifdef SEAM_DEBUG
+    {
+      std::cerr << "Writing seam";
+      unsigned char *out_seam = new unsigned char[height * cur_width * 3];
+      std::string out_path = add_ext(path, std::to_string(target_width) + "_" +
+                                   std::to_string(cur_width) + "_seam");
 
-    CHECK(cudaFree(gray));
+      CHECK(cudaMemcpy(out_seam, d_in, 3 * height * cur_width,
+                       cudaMemcpyDeviceToHost));
 
-  } else if (width < target_width) {
+      host_highlight_seam(out_seam, height, cur_width, seam);
+
+      stbi_write_png(out_path.c_str(), cur_width, height, 3, out_seam,
+                     cur_width * 3);
+
+      delete[] out_seam;
+    };
+#endif
+
+    int *d_gray_rz;
+    CHECK(cudaMalloc(&d_gray_rz, height * (cur_width - 1) * sizeof(int)));
+
+    // resizing gray
+    dim3 block_size(32, 32);
+    dim3 grid_size((cur_width - 1) / 32 + 1, (height - 1) / 32 + 1);
+    remove_seam_gray<<<grid_size, block_size>>>(d_gray, d_seam, height,
+                                                cur_width, d_gray_rz);
+
+    d_gray = d_gray_rz;
+
+    // copy back to host
+    CHECK(cudaMemcpy(gray, d_gray_rz, height * reduced_width * sizeof(int),
+                     cudaMemcpyDeviceToHost));
+
+    unsigned char *d_out;
+    CHECK(
+        cudaMalloc(&d_out, height * reduced_width * sizeof(unsigned char) * 3));
+
+    remove_seam_rgb<<<grid_size, block_size>>>(d_in, d_seam, height, cur_width,
+                                               d_out);
+
+#ifdef SEAM_DEBUG
+    {
+      // std::string out_path = add_ext(path, std::to_string(target_width) + "_" +
+      //                                          std::to_string(reduced_width));
+      //
+      // out = new unsigned char[3 * height * reduced_width];
+      // CHECK(cudaMemcpy(out, d_in, 3 * height * reduced_width,
+      //                  cudaMemcpyDeviceToHost));
+      // stbi_write_png(out_path.c_str(), reduced_width, height, 3, out,
+      //                cur_width * 3);
+      //
+      // delete[] out;
+      // unsigned char *tmp_gray = to_uchar(gray, height * reduced_width);
+      // out_path = add_ext(path, std::to_string(target_width) + "_" +
+      //                              std::to_string(reduced_width) + "_gray");
+      //
+      // stbi_write_png(out_path.c_str(), reduced_width, height, 1, tmp_gray,
+      //                reduced_width * 1);
+      //
+      // delete[] tmp_gray;
+    };
+#endif
+
+    CHECK(cudaFree(d_in));
+
+    d_in = d_out;
+
+    delete[] emap;
+    delete[] seam;
   }
+
+  out = new unsigned char[3 * height * target_width];
+  CHECK(
+      cudaMemcpy(out, d_in, 3 * height * target_width, cudaMemcpyDeviceToHost));
+
+  // CHECK(cudaFree(d_in));
+  delete[] gray;
 }
 
 int main(int argc, char **argv) {
 
-  if (argc > 1) {
-    int width, height, channels;
-    unsigned char *img = stbi_load(argv[2], &width, &height, &channels, 0);
-    if (img == NULL) {
-      cout << "Error in loading the image\n";
-      exit(1);
-    }
+  std::string in_path(argv[1]);
 
-    cout << "Loaded image with size of " << width << "x" << height
-         << " channels " << channels << '\n';
+  int target_width = atoi(argv[2]);
+
+  int width, height, channels;
+  unsigned char *img = stbi_load(argv[1], &width, &height, &channels, 0);
+  if (img == NULL) {
+    cout << "Error in loading the image\n";
+    exit(1);
   }
+
+  cout << "Loaded image with size of " << width << "x" << height << " channels "
+       << channels << '\n';
+
+  std::string out_path = add_ext(in_path, std::to_string(target_width));
+
+  unsigned char *out = new unsigned char[3 * height * target_width];
+
+  if (target_width < width) {
+    shrink_image(img, height, width, target_width, out, in_path);
+  } else {
+  }
+
+  stbi_write_png(out_path.c_str(), target_width, height, 3, out,
+                 target_width * 3);
+
+  cout << "Done!" << '\n';
 }
