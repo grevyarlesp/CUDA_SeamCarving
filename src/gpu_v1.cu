@@ -44,9 +44,9 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
         int x = threadIdx.x - di + j;
         int y = threadIdx.y - di + i;
         if (blkC + x < 0 || blkC + x >= w)
-          x = ((blkC + x < 0) ? 0 : w) - 1 - blkC;
+          x = (blkC + x < 0) ? 0 : w - 1 - blkC;
         if (blkR + y < 0 || blkR + y >= h)
-          y = ((blkR + y < 0) ? 0 : h) - 1 - blkR;
+          y = (blkR + y < 0) ? 0 : h - 1 - blkR;
         if (x < blockDim.x && y < blockDim.y) {
           int convind = y * blockDim.x + x;
           sum += kern[ki] * s_in[convind];
