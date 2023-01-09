@@ -68,19 +68,19 @@ void gpu_test(int ver) {
   }
 }
 
-void rand_test(int num = 2) {
+void rand_test(int SZH = 128, int SZW = 128, int num = 2) {
   srand(10000);
   cout << "Random test" << '\n';
-  int *A = new int[128 * 128];
-  int *host_ans = new int[128 * 128];
-  int *gpu_ans = new int[128 * 128];
+  int *A = new int[SZH * SZW];
+  int *host_ans = new int[SZH * SZW];
+  int *gpu_ans = new int[SZH  * SZW];
   for (int i = 0; i < num; ++i) {
-    for (int j = 0; j < 128 * 128; ++j) {
-      A[i] = rand() % 2000;
+    for (int j = 0; j < SZH * SZW; ++j) {
+      A[i] = rand() % 4000;
     }
-    V1_conv(A, 128, 128, gpu_ans);
-    host_sobel_conv(A, 128, 128, host_ans);
-    check_answer(gpu_ans, host_ans, 128 * 128, i);
+    V1_conv(A, SZH, SZW, gpu_ans);
+    host_sobel_conv(A, SZH, SZW, host_ans);
+    check_answer(gpu_ans, host_ans, SZH * SZW, i);
   }
 
   delete[] A;
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   } else {
     std::cout << "Testing Gpu ver " << ver << '\n';
     gpu_test(ver);
-    rand_test(100);
+    rand_test(1024, 777, 20);
   }
   return 0;
 }
