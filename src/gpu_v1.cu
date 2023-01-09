@@ -178,43 +178,6 @@ __global__ void Tpose_kern(int *d_in, int height, int width, int *out) {
   }
 }
 
-__global__ void V1_grayscale_kernel(unsigned char *d_in, int height, int width,
-                                    int *out) {
-
-  int r = blockDim.y * blockIdx.y + threadIdx.y;
-  int c = blockDim.x * blockIdx.x + threadIdx.x;
-
-  if (r >= height || c >= width)
-    return;
-
-  int pos = r * width + c;
-  int pos_ = pos * 3;
-
-  int ans = d_in[pos_] * 3;
-  ans = ans + d_in[pos_ + 1] * 6 + d_in[pos_ + 2];
-  ans /= 10;
-
-  out[pos] = ans;
-}
-
-void V1_grayscale(unsigned char *in, int height, int width, int *out,
-                  int block_size) {
-  unsigned char *d_in;
-  int *d_out;
-  cudaMalloc(&d_in, height * width * 3 * sizeof(unsigned char));
-  cudaMalloc(&d_out, height * width * sizeof(int));
-  cudaMemcpy(d_in, in, height * width * 3 * sizeof(unsigned char),
-             cudaMemcpyHostToDevice);
-  dim3 blockSize(block_size, block_size);
-  dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
-  V1_grayscale_kernel<<<gridSize, blockSize>>>(d_in, height, width, d_out);
-  cudaDeviceSynchronize();
-  CHECK(cudaMemcpy(out, d_out, height * width * sizeof(int),
-                   cudaMemcpyDeviceToHost));
-  cudaFree(d_in);
-  cudaFree(d_out);
-}
-
 void V1_conv(int *in, int height, int width, int *out, int block_size) {
   int *d_in, *d_out, *d_temp2, *d_temp1;
   size_t imgSize = width * height * sizeof(int);
@@ -383,17 +346,4 @@ __global__ void V1_seam_removal_kernel(int *d_in, int height, int width,
 
 __global__ void V1_seam_add_kernel() {}
 
-void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
-                   int blocksize) {
 
-  unsigned char *d_in;
-  CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
-
-  int *d_gray;
-  CHECK(cudaMalloc(&d_gray, sizeof(char) * height * width));
-
-  dim3 block_size(blocksize, blocksize);
-  dim3 grid_size((height - 1) / blocksize + 1, (width - 1) / blocksize + 1);
-
-  V1_grayscale_kernel<<<grid_size, block_size>>>(d_in, height, width, d_gray);
-}
