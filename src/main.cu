@@ -22,7 +22,7 @@ __global__ void remove_seam_rgb(unsigned char *img, int *d_seam, int height,
   int row = blockDim.y * blockIdx.y + threadIdx.y;
   int col = blockDim.x * blockIdx.x + threadIdx.x;
 
-  if (col >= width)
+  if (col >= width || row >= height)
     return;
 
   __shared__ int seam_x;
@@ -56,7 +56,7 @@ __global__ void remove_seam_gray(int *gray, int *d_seam, int height, int width,
   int row = blockDim.y * blockIdx.y + threadIdx.y;
   int col = blockDim.x * blockIdx.x + threadIdx.x;
 
-  if (col >= width)
+  if (col >= width || row >= height)
     return;
 
   __shared__ int seam_x;
@@ -123,7 +123,7 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 
     // seam,
     int *seam = new int[height];
-    V1_2_seam(emap, height, cur_width, seam, 512);
+    V1_seam(emap, height, cur_width, seam, 512);
 
     CHECK(
         cudaMemcpy(d_seam, seam, height * sizeof(int), cudaMemcpyHostToDevice));
