@@ -126,8 +126,4 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize) {
   return timer.Elapsed();
 }
 
-double remove_seam(unsigned char *img, int num) {
 
-    
-
-}
