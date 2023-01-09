@@ -114,14 +114,15 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 
     int reduced_width = cur_width - 1;
 #ifdef SHRINK_DEBUG 
-
-
     std::cerr << "Gray hash        :" << calc_hash(gray, height * cur_width) << '\n';
 #endif
 
     // remove 1 for cur_width
     int *emap = new int[height * cur_width];
     V1_conv(gray, height, cur_width, emap);
+#ifdef SHRINK_DEBUG
+      std::cerr << "Energy map hash :" << calc_hash(emap, height * cur_width) << '\n';
+#endif
 
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
@@ -135,8 +136,6 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 
 #ifdef SHRINK_DEBUG
     {
-
-      std::cerr << "Energy map hash :" << calc_hash(emap, height * cur_width) << '\n';
       std::cerr << "Seam hash       :" << calc_hash(seam, height) << '\n';
       
       // unsigned char *out_seam = new unsigned char[height * cur_width * 3];
