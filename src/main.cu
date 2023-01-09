@@ -123,7 +123,7 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 
     // seam,
     int *seam = new int[height];
-    V1_seam(emap, height, cur_width, seam, 512);
+    V1_2_seam(emap, height, cur_width, seam, 512);
 
     CHECK(
         cudaMemcpy(d_seam, seam, height * sizeof(int), cudaMemcpyHostToDevice));
