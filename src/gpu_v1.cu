@@ -125,36 +125,36 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 //         out[blockIdx.x] = min_ind;
 // }
 //
-int V1_min(int* in, int* ind, int n, int block_size){
-    int *d_in, *d_ind, *d_out;
-    dim3 blockSize(block_size);
-    dim3 gridSize((n - 1)/blockSize.x + 1);
-    int* out = (int*)malloc(gridSize.x*sizeof(int));
-    CHECK(cudaMalloc(&d_in, n*sizeof(int)));
-    CHECK(cudaMalloc(&d_ind, n*sizeof(int)));
-    CHECK(cudaMalloc(&d_out, gridSize.x*sizeof(int)));
-    CHECK(cudaMemcpy(d_in, in, n*sizeof(int), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(d_ind, ind, n*sizeof(int), cudaMemcpyHostToDevice));
-    
-    V1_min_kernel<<<gridSize, blockSize>>>(d_in, d_ind, n, d_out);
-    CHECK(cudaMemcpy(out, d_out, gridSize.x*sizeof(int), cudaMemcpyDeviceToHost));
-    int min_val = INT_MAX;
-    int min_ind = 0;
-    for(int i = 0; i < gridSize.x; i++)
-    {
-        if(in[out[i]] < min_val)
-        {
-            min_val = in[out[i]];
-            min_ind = out[i];
-        }
-    }
-    free(out);
-    CHECK(cudaFree(d_in));
-    CHECK(cudaFree(d_ind));
-    CHECK(cudaFree(d_out));
-    return min_ind;
-}
-
+// int V1_min(int* in, int* ind, int n, int block_size){
+//     int *d_in, *d_ind, *d_out;
+//     dim3 blockSize(block_size);
+//     dim3 gridSize((n - 1)/blockSize.x + 1);
+//     int* out = (int*)malloc(gridSize.x*sizeof(int));
+//     CHECK(cudaMalloc(&d_in, n*sizeof(int)));
+//     CHECK(cudaMalloc(&d_ind, n*sizeof(int)));
+//     CHECK(cudaMalloc(&d_out, gridSize.x*sizeof(int)));
+//     CHECK(cudaMemcpy(d_in, in, n*sizeof(int), cudaMemcpyHostToDevice));
+//     CHECK(cudaMemcpy(d_ind, ind, n*sizeof(int), cudaMemcpyHostToDevice));
+//     
+//     V1_min_kernel<<<gridSize, blockSize>>>(d_in, d_ind, n, d_out);
+//     CHECK(cudaMemcpy(out, d_out, gridSize.x*sizeof(int), cudaMemcpyDeviceToHost));
+//     int min_val = INT_MAX;
+//     int min_ind = 0;
+//     for(int i = 0; i < gridSize.x; i++)
+//     {
+//         if(in[out[i]] < min_val)
+//         {
+//             min_val = in[out[i]];
+//             min_ind = out[i];
+//         }
+//     }
+//     free(out);
+//     CHECK(cudaFree(d_in));
+//     CHECK(cudaFree(d_ind));
+//     CHECK(cudaFree(d_out));
+//     return min_ind;
+// }
+//
 #define BLOCK_ROWS 8
 
 __global__ void Tpose_kern(int *d_in, int height, int width, int *out) {
