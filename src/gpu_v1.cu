@@ -15,13 +15,12 @@ __constant__ int kern[9];
 
 #define TILE_DIM 32
 
-__global__ void V1_sum(int* in1, int* in2, int width, int height, int *out)
-{
+__global__ void V1_sum(int *in1, int *in2, int width, int height, int *out) {
   int r = blockIdx.y * blockDim.y + threadIdx.y;
   int c = blockIdx.x * blockDim.x + threadIdx.x;
   if (r >= height || c >= width)
     return;
-  int pos = r*width + c;
+  int pos = r * width + c;
   out[pos] = abs(in1[pos]) + abs(in2[pos]);
 }
 
@@ -74,7 +73,7 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 //     }
 // }
 //
-// __inline__ __device__  void blockReduceMin(int& val, int& idx) 
+// __inline__ __device__  void blockReduceMin(int& val, int& idx)
 // {
 //
 //     __shared__ int values[32], indices[32]; // Shared mem for 32 partial mins
@@ -135,12 +134,11 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 //     CHECK(cudaMalloc(&d_out, gridSize.x*sizeof(int)));
 //     CHECK(cudaMemcpy(d_in, in, n*sizeof(int), cudaMemcpyHostToDevice));
 //     CHECK(cudaMemcpy(d_ind, ind, n*sizeof(int), cudaMemcpyHostToDevice));
-//     
+//
 //     V1_min_kernel<<<gridSize, blockSize>>>(d_in, d_ind, n, d_out);
-//     CHECK(cudaMemcpy(out, d_out, gridSize.x*sizeof(int), cudaMemcpyDeviceToHost));
-//     int min_val = INT_MAX;
-//     int min_ind = 0;
-//     for(int i = 0; i < gridSize.x; i++)
+//     CHECK(cudaMemcpy(out, d_out, gridSize.x*sizeof(int),
+//     cudaMemcpyDeviceToHost)); int min_val = INT_MAX; int min_ind = 0; for(int
+//     i = 0; i < gridSize.x; i++)
 //     {
 //         if(in[out[i]] < min_val)
 //         {
@@ -211,7 +209,8 @@ void V1_grayscale(unsigned char *in, int height, int width, int *out,
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
   V1_grayscale_kernel<<<gridSize, blockSize>>>(d_in, height, width, d_out);
   cudaDeviceSynchronize();
-  CHECK(cudaMemcpy(out, d_out, height * width * sizeof(int), cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy(out, d_out, height * width * sizeof(int),
+                   cudaMemcpyDeviceToHost));
   cudaFree(d_in);
   cudaFree(d_out);
 }
@@ -230,21 +229,21 @@ void V1_conv(int *in, int height, int width, int *out, int block_size) {
   dim3 blockSize(block_size, block_size);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
 
-  //Sobel X
+  // Sobel X
   CHECK(cudaMemcpyToSymbol(kern, SOBEL_X, kernSize));
   V1_conv_kernel<<<gridSize, blockSize, TILE_DIM * TILE_DIM * sizeof(int)>>>(
       d_in, width, height, d_temp1);
   cudaDeviceSynchronize();
   cudaGetLastError();
 
-  //Sobel Y
+  // Sobel Y
   CHECK(cudaMemcpyToSymbol(kern, SOBEL_Y, kernSize));
   V1_conv_kernel<<<gridSize, blockSize, TILE_DIM * TILE_DIM * sizeof(int)>>>(
       d_in, width, height, d_temp2);
   cudaDeviceSynchronize();
   cudaGetLastError();
 
-  //Combine
+  // Combine
   V1_sum<<<gridSize, blockSize>>>(d_temp1, d_temp2, width, height, d_out);
   cudaDeviceSynchronize();
   cudaGetLastError();
@@ -371,7 +370,6 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaFree(d_dp));
   CHECK(cudaFree(d_trace));
 
-
 #ifdef DEBUG
   cerr << "End of debug for V1_seam" << '\n';
   cerr << "==================================\n";
@@ -380,13 +378,10 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
   return timer.Elapsed();
 }
 
-__global__ void V1_seam_removal_kernel(int *d_in, int height, int width, int *d_out) {
+__global__ void V1_seam_removal_kernel(int *d_in, int height, int width,
+                                       int *d_out) {}
 
-}
-
-__global__ void V1_seam_add_kernel() {
-
-}
+__global__ void V1_seam_add_kernel() {}
 
 void v1_in_to_seam(unsigned char *in, int height, int width, char *out,
                    int blocksize) {
