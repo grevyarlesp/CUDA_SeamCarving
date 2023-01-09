@@ -102,6 +102,9 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
   CHECK(cudaMemcpy(gray, d_gray, sizeof(int) * height * width,
                    cudaMemcpyDeviceToHost));
 
+  int *d_seam;
+  CHECK(cudaMalloc(&d_seam, height * sizeof(int)));
+
   for (int cur_width = width; cur_width > target_width; --cur_width) {
 
 
@@ -118,8 +121,6 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     int *seam = new int[height];
     V1_2_seam(emap, height, cur_width, seam, 512);
 
-    int *d_seam;
-    CHECK(cudaMalloc(&d_seam, height * sizeof(int)));
     CHECK(
         cudaMemcpy(d_seam, seam, height * sizeof(int), cudaMemcpyHostToDevice));
 
@@ -200,6 +201,7 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     d_in = d_out;
 
     delete[] emap;
+
     delete[] seam;
   }
 
@@ -216,8 +218,11 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
   std::cout << "Done writing to " << out_path << '\n';
 
   CHECK(cudaFree(d_in));
+  CHECK(cudaFree(d_seam));
+  CHECK(cudaFree(d_gray));
   delete[] gray;
   delete[] out;
+
 }
 
 int main(int argc, char **argv) {
