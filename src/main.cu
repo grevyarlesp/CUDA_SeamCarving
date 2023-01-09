@@ -113,6 +113,11 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 
 
     int reduced_width = cur_width - 1;
+#ifdef SHRINK_DEBUG 
+
+
+    std::cerr << "Gray hash        :" << calc_hash(gray, height * cur_width) << '\n';
+#endif
 
     // remove 1 for cur_width
     int *emap = new int[height * cur_width];
@@ -130,20 +135,24 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 
 #ifdef SHRINK_DEBUG
     {
-      unsigned char *out_seam = new unsigned char[height * cur_width * 3];
-      std::string out_path =
-          add_ext(path, std::to_string(target_width) + "_" +
-                            std::to_string(cur_width) + "_seam");
 
-      CHECK(cudaMemcpy(out_seam, d_in, 3 * height * cur_width,
-                       cudaMemcpyDeviceToHost));
-
-      host_highlight_seam(out_seam, height, cur_width, seam);
-
-      stbi_write_png(out_path.c_str(), cur_width, height, 3, out_seam,
-                     cur_width * 3);
-
-      delete[] out_seam;
+      std::cerr << "Energy map hash :" << calc_hash(emap, height * cur_width) << '\n';
+      std::cerr << "Seam hash       :" << calc_hash(seam, height) << '\n';
+      
+      // unsigned char *out_seam = new unsigned char[height * cur_width * 3];
+      // std::string out_path =
+      //     add_ext(path, std::to_string(target_width) + "_" +
+      //                       std::to_string(cur_width) + "_seam");
+      //
+      // CHECK(cudaMemcpy(out_seam, d_in, 3 * height * cur_width,
+      //                  cudaMemcpyDeviceToHost));
+      //
+      // host_highlight_seam(out_seam, height, cur_width, seam);
+      //
+      // stbi_write_png(out_path.c_str(), cur_width, height, 3, out_seam,
+      //                cur_width * 3);
+      //
+      // delete[] out_seam;
     };
 #endif
 
@@ -165,6 +174,9 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     // copy back to host
     CHECK(cudaMemcpy(gray, d_gray_rz, height * reduced_width * sizeof(int),
                      cudaMemcpyDeviceToHost));
+#ifdef SHRINK_DEBUG 
+      std::cerr << "Reduced gray hash " << calc_hash(gray, height * reduced_width) << '\n';
+#endif
 
     unsigned char *d_out;
     CHECK(

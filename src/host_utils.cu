@@ -52,3 +52,14 @@ unsigned char *to_uchar(int *in, int n) {
 }
 
 
+long long calc_hash(int *in, int n) {
+  const long long M = 1e9 + 7;
+  const long long BASE = 3000;
+  long long ans = 0;
+
+  for (int i = 0; i < n; ++i) {
+    ans = (ans + in[i]) * BASE % M;
+  }
+  return ans;
+}
+
