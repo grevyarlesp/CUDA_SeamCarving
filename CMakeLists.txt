@@ -76,7 +76,7 @@ set_target_properties(libs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(SeamCarving ${PROJECT_SOURCE_DIR}/src/main.cu)
 set_target_properties(SeamCarving PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(SeamCarving PRIVATE libs)
+target_link_libraries(SeamCarving PRIVATE libs stbimage)
 
 add_executable(conv_test ${PROJECT_SOURCE_DIR}/test/conv_tests.cu)
 set_target_properties(conv_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

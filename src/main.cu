@@ -22,12 +22,16 @@ __global__ void remove_seam_rgb(unsigned char *img, int *d_seam, int height,
   int row = blockDim.y * blockIdx.y + threadIdx.y;
   int col = blockDim.x * blockIdx.x + threadIdx.x;
 
-  if (row >= height || col >= width)
+  if (col >= width)
     return;
 
-  int pos = row * width + col;
+  __shared__ int seam_x;
 
-  int seam_x = d_seam[col];
+  if (threadIdx.x == 0)
+    seam_x = d_seam[row];
+  __syncthreads();
+
+  int pos = row * width + col;
 
   int target_col = col;
 
@@ -52,12 +56,16 @@ __global__ void remove_seam_gray(int *gray, int *d_seam, int height, int width,
   int row = blockDim.y * blockIdx.y + threadIdx.y;
   int col = blockDim.x * blockIdx.x + threadIdx.x;
 
-  if (row >= height || col >= width)
+  if (col >= width)
     return;
 
-  int pos = row * width + col;
+  __shared__ int seam_x;
 
-  int seam_x = d_seam[col];
+  if (threadIdx.x == 0)
+    seam_x = d_seam[row];
+  __syncthreads();
+
+  int pos = row * width + col;
 
   int target_col = col;
 
@@ -75,12 +83,10 @@ __global__ void remove_seam_gray(int *gray, int *d_seam, int height, int width,
   d_out[target_pos] = gray[pos];
 }
 
-void shrink_image(unsigned char *img, int height, int width, int target_width,
-                  unsigned char *out, std::string path) {
+void shrink_image(unsigned char *img, int height, int width, int target_width, std::string path) {
+
   unsigned char *d_in;
-
   CHECK(cudaMalloc(&d_in, sizeof(unsigned char) * 3 * height * width));
-
   CHECK(cudaMemcpy(d_in, img, sizeof(unsigned char) * 3 * height * width,
                    cudaMemcpyHostToDevice));
 
@@ -98,11 +104,15 @@ void shrink_image(unsigned char *img, int height, int width, int target_width,
 
   for (int cur_width = width; cur_width > target_width; --cur_width) {
 
+
     int reduced_width = cur_width - 1;
 
     // remove 1 for cur_width
     int *emap = new int[height * cur_width];
     V1_conv(gray, height, cur_width, emap);
+
+    CHECK(cudaDeviceSynchronize());
+    CHECK(cudaGetLastError());
 
     // seam,
     int *seam = new int[height];
@@ -115,10 +125,10 @@ void shrink_image(unsigned char *img, int height, int width, int target_width,
 
 #ifdef SEAM_DEBUG
     {
-      std::cerr << "Writing seam";
       unsigned char *out_seam = new unsigned char[height * cur_width * 3];
-      std::string out_path = add_ext(path, std::to_string(target_width) + "_" +
-                                   std::to_string(cur_width) + "_seam");
+      std::string out_path =
+          add_ext(path, std::to_string(target_width) + "_" +
+                            std::to_string(cur_width) + "_seam");
 
       CHECK(cudaMemcpy(out_seam, d_in, 3 * height * cur_width,
                        cudaMemcpyDeviceToHost));
@@ -133,14 +143,18 @@ void shrink_image(unsigned char *img, int height, int width, int target_width,
 #endif
 
     int *d_gray_rz;
-    CHECK(cudaMalloc(&d_gray_rz, height * (cur_width - 1) * sizeof(int)));
+    CHECK(cudaMalloc(&d_gray_rz, height * reduced_width * sizeof(int)));
 
     // resizing gray
-    dim3 block_size(32, 32);
-    dim3 grid_size((cur_width - 1) / 32 + 1, (height - 1) / 32 + 1);
+    dim3 block_size(256);
+    dim3 grid_size((cur_width - 1) / block_size.x + 1, height);
     remove_seam_gray<<<grid_size, block_size>>>(d_gray, d_seam, height,
                                                 cur_width, d_gray_rz);
 
+    CHECK(cudaDeviceSynchronize());
+    CHECK(cudaGetLastError());
+
+    CHECK(cudaFree(d_gray));
     d_gray = d_gray_rz;
 
     // copy back to host
@@ -154,43 +168,56 @@ void shrink_image(unsigned char *img, int height, int width, int target_width,
     remove_seam_rgb<<<grid_size, block_size>>>(d_in, d_seam, height, cur_width,
                                                d_out);
 
+    CHECK(cudaDeviceSynchronize());
+    CHECK(cudaGetLastError());
+
 #ifdef SEAM_DEBUG
     {
-      // std::string out_path = add_ext(path, std::to_string(target_width) + "_" +
-      //                                          std::to_string(reduced_width));
-      //
-      // out = new unsigned char[3 * height * reduced_width];
-      // CHECK(cudaMemcpy(out, d_in, 3 * height * reduced_width,
-      //                  cudaMemcpyDeviceToHost));
-      // stbi_write_png(out_path.c_str(), reduced_width, height, 3, out,
-      //                cur_width * 3);
-      //
-      // delete[] out;
-      // unsigned char *tmp_gray = to_uchar(gray, height * reduced_width);
-      // out_path = add_ext(path, std::to_string(target_width) + "_" +
-      //                              std::to_string(reduced_width) + "_gray");
-      //
-      // stbi_write_png(out_path.c_str(), reduced_width, height, 1, tmp_gray,
-      //                reduced_width * 1);
-      //
-      // delete[] tmp_gray;
+        // std::string out_path = add_ext(path, std::to_string(target_width) +
+        // "_" +
+        //                                          std::to_string(reduced_width));
+        //
+        // out = new unsigned char[3 * height * reduced_width];
+        // CHECK(cudaMemcpy(out, d_in, 3 * height * reduced_width,
+        //                  cudaMemcpyDeviceToHost));
+        // stbi_write_png(out_path.c_str(), reduced_width, height, 3, out,
+        //                cur_width * 3);
+        //
+        // delete[] out;
+        // unsigned char *tmp_gray = to_uchar(gray, height * reduced_width);
+        // out_path = add_ext(path, std::to_string(target_width) + "_" +
+        //                              std::to_string(reduced_width) +
+        //                              "_gray");
+        //
+        // stbi_write_png(out_path.c_str(), reduced_width, height, 1, tmp_gray,
+        //                reduced_width * 1);
+        //
+        // delete[] tmp_gray;
     };
 #endif
 
     CHECK(cudaFree(d_in));
-
     d_in = d_out;
 
     delete[] emap;
     delete[] seam;
   }
 
-  out = new unsigned char[3 * height * target_width];
-  CHECK(
-      cudaMemcpy(out, d_in, 3 * height * target_width, cudaMemcpyDeviceToHost));
 
-  // CHECK(cudaFree(d_in));
+  std::cerr << "Copying\n";
+  unsigned char* out = new unsigned char[3 * height * target_width];
+
+  CHECK(cudaMemcpy(out, d_in, 3 * height * target_width * sizeof(unsigned char),
+                   cudaMemcpyDeviceToHost));
+
+  std::string out_path = add_ext(path, std::to_string(target_width));
+  stbi_write_png(out_path.c_str(), target_width, height, 3, out,
+                 target_width * 3);
+  std::cout << "Done writing to " << out_path << '\n';
+
+  CHECK(cudaFree(d_in));
   delete[] gray;
+  delete[] out;
 }
 
 int main(int argc, char **argv) {
@@ -208,18 +235,15 @@ int main(int argc, char **argv) {
 
   cout << "Loaded image with size of " << width << "x" << height << " channels "
        << channels << '\n';
+  cout << "Target Width = " << target_width << '\n';
 
   std::string out_path = add_ext(in_path, std::to_string(target_width));
 
-  unsigned char *out = new unsigned char[3 * height * target_width];
-
   if (target_width < width) {
-    shrink_image(img, height, width, target_width, out, in_path);
+
+    cout << "Shrinking to = " << target_width << '\n';
+    shrink_image(img, height, width, target_width, in_path);
   } else {
+    // enlarge
   }
-
-  stbi_write_png(out_path.c_str(), target_width, height, 3, out,
-                 target_width * 3);
-
-  cout << "Done!" << '\n';
 }
