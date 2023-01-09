@@ -107,6 +107,10 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
 
   for (int cur_width = width; cur_width > target_width; --cur_width) {
 
+#ifdef SHRINK_DEBUG
+    std::cerr << cur_width << '\n';
+#endif
+
 
     int reduced_width = cur_width - 1;
 
@@ -124,7 +128,7 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     CHECK(
         cudaMemcpy(d_seam, seam, height * sizeof(int), cudaMemcpyHostToDevice));
 
-#ifdef SEAM_DEBUG
+#ifdef SHRINK_DEBUG
     {
       unsigned char *out_seam = new unsigned char[height * cur_width * 3];
       std::string out_path =
@@ -172,7 +176,7 @@ void shrink_image(unsigned char *img, int height, int width, int target_width, s
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
 
-#ifdef SEAM_DEBUG
+#ifdef SHRINK_DEBUG
     {
         // std::string out_path = add_ext(path, std::to_string(target_width) +
         // "_" +
