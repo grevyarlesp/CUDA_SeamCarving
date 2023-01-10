@@ -2,6 +2,7 @@
 #include "gpu_v1.h"
 #include "host.h"
 #include "host_utils.h"
+#include <cstdlib>
 
 #include <cstdio>
 #include <iostream>
@@ -47,48 +48,59 @@ void host_test() {
 }
 
 void gpu_test(int ver) {
-  srand(7123);
 
-  if (ver == 1) {
-    for (size_t i = 0; i < dat.size(); ++i) {
+  for (size_t i = 0; i < dat.size(); ++i) {
 
-      cout << "Case " << i << '\n';
-      vector<int> &V = dat[i];
+    cout << "Case " << i << '\n';
+    vector<int> &V = dat[i];
 
-      pair<int, int> s = dat_sz[i];
-      int *act = new int[s.H * s.W];
+    pair<int, int> s = dat_sz[i];
+    int *act = new int[s.H * s.W];
 
+    if (ver == 1)
       V1_conv(V.data(), s.H, s.W, act);
-      check_answer(act, ans[i].data(), s.H * s.W, i);
+    else if (ver == 2) 
+      Test_conv(V.data(), s.H, s.W, act);
 
-      delete[] act;
-    }
+    check_answer(act, ans[i].data(), s.H * s.W, i);
 
-  } else {
+    delete[] act;
   }
 }
 
-void rand_test(int ver, int SZH = 128, int SZW = 128, int num = 2) {
-  srand(10000);
-  cout << "Random test" << '\n';
-  int *A = new int[SZH * SZW];
-  int *host_ans = new int[SZH * SZW];
-  int *gpu_ans = new int[SZH  * SZW];
+void rand_test(int ver, int HEIGHT = 128, int WIDTH = 128, int num = 2) {
+  std::cout << "Random test, size =  " << HEIGHT << " " << WIDTH << '\n';
+
+  srand(222022);
+  int *A = new int[HEIGHT * WIDTH];
+  int *host_ans = new int[HEIGHT * WIDTH];
+  int *gpu_ans = new int[HEIGHT * WIDTH];
   for (int i = 0; i < num; ++i) {
-    for (int j = 0; j < SZH * SZW; ++j) {
+
+    cout << "Case " << i << '\n';
+
+    int *host_ans = new int[HEIGHT * WIDTH];
+    int *gpu_ans = new int[HEIGHT * WIDTH];
+
+    for (int j = 0; j < HEIGHT * WIDTH; ++j) {
       A[i] = rand() % 4000;
     }
     if (ver == 1)
-    V1_conv(A, SZH, SZW, gpu_ans);
-    else 
-      Test_conv(A, SZH, SZW, gpu_ans);
-    host_sobel_conv(A, SZH, SZW, host_ans);
-    check_answer(gpu_ans, host_ans, SZH * SZW, i);
+      V1_conv(A, HEIGHT, WIDTH, gpu_ans);
+    else if (ver == 2)
+      Test_conv(A, HEIGHT, WIDTH, gpu_ans);
+
+
+    host_sobel_conv(A, HEIGHT, WIDTH, host_ans);
+
+    cout << '\n';
+    check_answer(gpu_ans, host_ans, HEIGHT * WIDTH, i);
+
+    delete[] host_ans;
+    delete[] gpu_ans;
   }
 
   delete[] A;
-  delete[] host_ans;
-  delete[] gpu_ans;
 }
 
 int main(int argc, char **argv) {
@@ -101,10 +113,10 @@ int main(int argc, char **argv) {
   } else {
     std::cout << "Testing Gpu ver " << ver << '\n';
     gpu_test(ver);
-    rand_test(1024, 768, 20);
-    rand_test(1024, 777, 20);
-    rand_test(777, 777, 20);
-    rand_test(238, 777, 20);
+    rand_test(ver, 1024, 768, 20);
+    rand_test(ver, 1024, 777, 20);
+    rand_test(ver, 777, 777, 20);
+    rand_test(ver, 238, 777, 20);
   }
   return 0;
 }

@@ -1,13 +1,13 @@
 #include <algorithm>
 #include <cassert>
 
-#include <cstdlib>
 #include "gpu_utils.h"
+#include <cstdlib>
 #include <cwchar>
+#include <iostream>
 #include <math.h>
 #include <stdio.h>
 #include <vector>
-#include <iostream>
 
 using namespace std;
 
@@ -25,11 +25,10 @@ const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 void host_to_grayscale(unsigned char *in, int height, int width, int *out) {
 
   for (int i = 0, cnt = 0; i < height * width * 3; i += 3, ++cnt) {
-    int x = 0; 
+    int x = 0;
     x += in[i] * 3;
-    x += in[i + 1] * 6; 
-    x += in[i + 2];
-    x /= 10;
+    x += in[i + 1] * 6;
+    x += in[i + 2]; x /= 10;
     out[cnt] = x;
   }
 }
@@ -56,28 +55,29 @@ Output: n * m energy map
 */
 void host_sobel_conv(int *in, int height, int width, int *out) {
   if (out == nullptr) {
+    cout << " Out is null. ending";
     return;
   }
 
-    for (int i = 0; i < height; ++i) {
-      for (int j = 0; j < width; ++j) {
-        int sum1 = 0;
-        int sum2 = 0;
-        for (int i_ = -1, cnt = 0; i_ <= 1; ++i_) {
-          for (int j_ = -1; j_ <= 1; ++j_, ++cnt) {
-            int r_ = i - i_;
-            int c_ = j - j_;
-            // printf("%d %d\n", r_, c_);
-            r_ = max(0, min(r_, height - 1));
-            c_ = max(0, min(c_, width - 1));
-            int pos = r_ * width + c_;
-            sum1 += in[pos] * SOBEL_X[cnt];
-            sum2 += in[pos] * SOBEL_Y[cnt];
-            // printf("%d %d", sum1, sum2);
-          }
+  for (int i = 0; i < height; ++i) {
+    for (int j = 0; j < width; ++j) {
+      int sum1 = 0;
+      int sum2 = 0;
+      for (int i_ = -1, cnt = 0; i_ <= 1; ++i_) {
+        for (int j_ = -1; j_ <= 1; ++j_, ++cnt) {
+          int r_ = i - i_;
+          int c_ = j - j_;
+          // printf("%d %d\n", r_, c_);
+          r_ = max(0, min(r_, height - 1));
+          c_ = max(0, min(c_, width - 1));
+          int pos = r_ * width + c_;
+          sum1 += in[pos] * SOBEL_X[cnt];
+          sum2 += in[pos] * SOBEL_Y[cnt];
+          // printf("%d %d", sum1, sum2);
         }
-        out[i * width + j] = abs(sum1) + abs(sum2);
       }
+      out[i * width + j] = abs(sum1) + abs(sum2);
+    }
   }
 }
 
