@@ -2,6 +2,7 @@
 #include "gpu_v1.h"
 #include "host.h"
 #include "host_utils.h"
+#include <algorithm>
 #include <cstdlib>
 
 #include <cstdio>
@@ -71,7 +72,8 @@ void gpu_test(int ver) {
 void rand_test(int ver, int HEIGHT = 128, int WIDTH = 128, int num = 2) {
   std::cout << "Random test, size =  " << HEIGHT << " " << WIDTH << '\n';
 
-  srand(222022);
+  srand((unsigned)time(0));
+
   int *A = new int[HEIGHT * WIDTH];
   int *host_ans = new int[HEIGHT * WIDTH];
   int *gpu_ans = new int[HEIGHT * WIDTH];
@@ -83,17 +85,18 @@ void rand_test(int ver, int HEIGHT = 128, int WIDTH = 128, int num = 2) {
     int *gpu_ans = new int[HEIGHT * WIDTH];
 
     for (int j = 0; j < HEIGHT * WIDTH; ++j) {
-      A[i] = rand() % 4000;
+      A[j] = rand() % 4000;
     }
+    int mx = *std::max_element(A, A + HEIGHT * WIDTH);
+    int mn = *std::min_element(A, A + HEIGHT * WIDTH);
+    cout << "Max " << mx << ' ' << "Min " <<  ' ' << mn << '\n';
     if (ver == 1)
       V1_conv(A, HEIGHT, WIDTH, gpu_ans);
     else if (ver == 2)
       Test_conv(A, HEIGHT, WIDTH, gpu_ans);
 
-
     host_sobel_conv(A, HEIGHT, WIDTH, host_ans);
 
-    cout << '\n';
     check_answer(gpu_ans, host_ans, HEIGHT * WIDTH, i);
 
     delete[] host_ans;
