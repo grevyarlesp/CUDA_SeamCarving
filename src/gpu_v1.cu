@@ -61,9 +61,12 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
   }
 }
 
+#define S_WIDTH 66
+#define S_HEIGHT 32
+
 __global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, int h, int *out)
 {
-  __shared__ int s_in[(S_WIDTH) * (S_HEIGHT)];
+  __shared__ int s_in[S_WIDTH * S_HEIGHT];
   int row = blockIdx.y * blockDim.y + threadIdx.y;
   int col = blockIdx.x * blockDim.x + threadIdx.x;
   int k = row * pitch/sizeof(int) + col;
@@ -95,21 +98,18 @@ __global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, 
   int ix = 0;
   int iy = 0;
   k = row * en_pitch/sizeof(int) + col;
-  if (1)
+  if ((row > 0) && (row < h - 1) && (col > 0) && (col < w - 1))
+  {      
+    ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
+    iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
+  }
+  else if (row == 0 || row == h - 1)
   {
-    if ((row > 0) && (row < h) && (col > 0) && (col < w))
-    {      
-      ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
-      iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
-    }
-    else if (row == 0 || row == h - 1)
-    {
-      ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
-    }
-    else if (col == 0 || col == w - 1)
-    {
-      iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
-    }
+    ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
+  }
+  else if (col == 0 || col == w - 1)
+  {
+    iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
   }
   out[k] = 0.5*(abs(ix) + abs(iy));
 }
@@ -122,8 +122,7 @@ void Test_conv(int *in, int w, int h, int *out)
   CHECK(cudaMallocPitch(&d_in, &pitch, w * sizeof(int), h));
   CHECK(cudaMallocPitch(&d_out, &en_pitch, w*sizeof(int), h));
   CHECK(cudaMemcpy2D(d_in, pitch, in, w * sizeof(int), w * sizeof(int), h, cudaMemcpyHostToDevice));
-  printf("%d %d\n", pitch/sizeof(int), en_pitch/sizeof(int));
-  dim3 blockSize(64, 8);
+  dim3 blockSize(S_WIDTH - 2, S_HEIGHT - 2);
   dim3 gridSize((w - 1) / blockSize.x + 1, (h - 1) / blockSize.y + 1);
   Test_conv_kernel<<<gridSize, blockSize>>>(d_in, pitch, en_pitch, w, h, d_out);
   CHECK(cudaDeviceSynchronize());
@@ -132,6 +131,7 @@ void Test_conv(int *in, int w, int h, int *out)
   cudaFree(d_in);
   cudaFree(d_out);
 }
+
 
 // __inline__ __device__ void warpReduceMin(int& val, int& idx)
 // {
