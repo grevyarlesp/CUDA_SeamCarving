@@ -120,7 +120,9 @@ void shrink_image(unsigned char *img, int height, int width, int target_width,
 
     // remove 1 for cur_width
     int *emap = new int[height * cur_width];
-    V1_conv(gray, height, cur_width, emap);
+    // V1_conv(gray, height, cur_width, emap);
+
+    host_sobel_conv(gray, height, cur_width, emap);
 
 #ifdef SHRINK_DEBUG
 

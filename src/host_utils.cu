@@ -15,12 +15,12 @@ bool check_answer(int *act, int *expected, int n, int ncase) {
 
   if (!b) {
     cout << "Actual = \n";
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < min(n, 100); ++i) {
       cout << act[i] << ' ';
     }
     cout << '\n';
     cout << "Expected = \n";
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < min(n, 100); ++i) {
       cout << expected[i] << ' ';
     }
     cout << '\n';

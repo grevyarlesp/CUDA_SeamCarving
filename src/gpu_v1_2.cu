@@ -6,6 +6,7 @@
 
 using std::cerr;
 
+
 /*
    Dynamic programming kernel for finding seam
    */
@@ -125,5 +126,7 @@ double V1_2_seam(int *in, int height, int width, int *out, int blocksize) {
   CHECK(cudaFree(d_trace));
   return timer.Elapsed();
 }
+
+
 
 
