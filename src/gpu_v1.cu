@@ -114,20 +114,20 @@ __global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, 
   out[k] = 0.5*(abs(ix) + abs(iy));
 }
 
-void Test_conv(int *in, int w, int h, int *out)
+void Test_conv(int *in, int height, int width, int *out)
 {
   size_t pitch;
   size_t en_pitch;
   int* d_in, *d_out;
-  CHECK(cudaMallocPitch(&d_in, &pitch, w * sizeof(int), h));
-  CHECK(cudaMallocPitch(&d_out, &en_pitch, w*sizeof(int), h));
-  CHECK(cudaMemcpy2D(d_in, pitch, in, w * sizeof(int), w * sizeof(int), h, cudaMemcpyHostToDevice));
+  CHECK(cudaMallocPitch(&d_in, &pitch, width * sizeof(int), height));
+  CHECK(cudaMallocPitch(&d_out, &en_pitch, width*sizeof(int), height));
+  CHECK(cudaMemcpy2D(d_in, pitch, in, width * sizeof(int), width * sizeof(int), height, cudaMemcpyHostToDevice));
   dim3 blockSize(S_WIDTH - 2, S_HEIGHT - 2);
-  dim3 gridSize((w - 1) / blockSize.x + 1, (h - 1) / blockSize.y + 1);
-  Test_conv_kernel<<<gridSize, blockSize>>>(d_in, pitch, en_pitch, w, h, d_out);
+  dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
+  Test_conv_kernel<<<gridSize, blockSize>>>(d_in, pitch, en_pitch, width, height, d_out);
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
-  CHECK(cudaMemcpy2D(out, w*sizeof(int), d_out, en_pitch, w*sizeof(int), h, cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy2D(out, width*sizeof(int), d_out, en_pitch, width*sizeof(int), height, cudaMemcpyDeviceToHost));
   cudaFree(d_in);
   cudaFree(d_out);
 }
@@ -412,10 +412,5 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
 
   return timer.Elapsed();
 }
-
-__global__ void V1_seam_removal_kernel(int *d_in, int height, int width,
-                                       int *d_out) {}
-
-__global__ void V1_seam_add_kernel() {}
 
 

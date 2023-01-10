@@ -68,7 +68,7 @@ void gpu_test(int ver) {
   }
 }
 
-void rand_test(int SZH = 128, int SZW = 128, int num = 2) {
+void rand_test(int ver, int SZH = 128, int SZW = 128, int num = 2) {
   srand(10000);
   cout << "Random test" << '\n';
   int *A = new int[SZH * SZW];
@@ -78,7 +78,10 @@ void rand_test(int SZH = 128, int SZW = 128, int num = 2) {
     for (int j = 0; j < SZH * SZW; ++j) {
       A[i] = rand() % 4000;
     }
+    if (ver == 1)
     V1_conv(A, SZH, SZW, gpu_ans);
+    else 
+      Test_conv(A, SZH, SZW, gpu_ans);
     host_sobel_conv(A, SZH, SZW, host_ans);
     check_answer(gpu_ans, host_ans, SZH * SZW, i);
   }
