@@ -152,3 +152,7 @@ double V1_1_seam(int *in, int height, int width, int *out, int blocksize) {
 
   return timer.Elapsed();
 }
+
+__global__ void V1_1_conv(int *d_in ) {
+
+}

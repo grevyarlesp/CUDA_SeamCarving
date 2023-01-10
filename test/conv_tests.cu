@@ -100,6 +100,8 @@ int main(int argc, char **argv) {
     gpu_test(ver);
     rand_test(1024, 768, 20);
     rand_test(1024, 777, 20);
+    rand_test(777, 777, 20);
+    rand_test(238, 777, 20);
   }
   return 0;
 }
