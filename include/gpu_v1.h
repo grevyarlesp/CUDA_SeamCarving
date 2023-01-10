@@ -4,6 +4,8 @@
 void V1_conv(int *in, int height, int width, int *out, int block_size = 32);
 double V1_seam(int *in, int n, int m, int *out, int blocksize = 256);
 
+void Test_conv(int *in, int w, int h, int *out);
+
 // 1024 max
 void V1_grayscale(unsigned char *in, int height, int width, int *out,
                   int blocksize = 32);
