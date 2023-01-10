@@ -61,6 +61,78 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
   }
 }
 
+__global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, int h, int *out)
+{
+  __shared__ int s_in[(S_WIDTH) * (S_HEIGHT)];
+  int row = blockIdx.y * blockDim.y + threadIdx.y;
+  int col = blockIdx.x * blockDim.x + threadIdx.x;
+  int k = row * pitch/sizeof(int) + col;
+  int j = threadIdx.x + 1;
+  int i = threadIdx.y + 1;
+  if (row >= 0 && row < h && col >= 0 && col < w)
+  {
+    s_in[i * S_WIDTH + j] = in[k];
+
+    if (threadIdx.x == 0 && col != 0)
+    {
+      s_in[i * S_WIDTH] = in[k-1];
+    }
+    if (threadIdx.x == blockDim.x - 1 && col != w - 1)
+    {
+      s_in[i * S_WIDTH + blockDim.x + 1] = in[k+1];
+    }
+    if (threadIdx.y == 0 && row != 0)
+    {
+      s_in[j] = in[k-pitch];
+    }
+    if (threadIdx.y == blockDim.y - 1 && row != h - 1)
+    { 
+      s_in[(blockDim.y + 1)*S_WIDTH + j] = in[k+pitch];
+    }
+  }
+  __syncthreads();
+
+  int ix = 0;
+  int iy = 0;
+  k = row * en_pitch/sizeof(int) + col;
+  if (1)
+  {
+    if ((row > 0) && (row < h) && (col > 0) && (col < w))
+    {      
+      ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
+      iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
+    }
+    else if (row == 0 || row == h - 1)
+    {
+      ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
+    }
+    else if (col == 0 || col == w - 1)
+    {
+      iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
+    }
+  }
+  out[k] = 0.5*(abs(ix) + abs(iy));
+}
+
+void Test_conv(int *in, int w, int h, int *out)
+{
+  size_t pitch;
+  size_t en_pitch;
+  int* d_in, *d_out;
+  CHECK(cudaMallocPitch(&d_in, &pitch, w * sizeof(int), h));
+  CHECK(cudaMallocPitch(&d_out, &en_pitch, w*sizeof(int), h));
+  CHECK(cudaMemcpy2D(d_in, pitch, in, w * sizeof(int), w * sizeof(int), h, cudaMemcpyHostToDevice));
+  printf("%d %d\n", pitch/sizeof(int), en_pitch/sizeof(int));
+  dim3 blockSize(64, 8);
+  dim3 gridSize((w - 1) / blockSize.x + 1, (h - 1) / blockSize.y + 1);
+  Test_conv_kernel<<<gridSize, blockSize>>>(d_in, pitch, en_pitch, w, h, d_out);
+  CHECK(cudaDeviceSynchronize());
+  CHECK(cudaGetLastError());
+  CHECK(cudaMemcpy2D(out, w*sizeof(int), d_out, en_pitch, w*sizeof(int), h, cudaMemcpyDeviceToHost));
+  cudaFree(d_in);
+  cudaFree(d_out);
+}
+
 // __inline__ __device__ void warpReduceMin(int& val, int& idx)
 // {
 //     for (int offset = warpSize / 2; offset > 0; offset /= 2) {
