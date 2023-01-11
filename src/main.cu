@@ -479,8 +479,15 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
     dim3 grid_size((cur_width - 1) / block_size.x + 1, height);
     dup_seam_rgb<<<grid_size, block_size>>>(d_in, d_seam, height, width, d_out);
 
+
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
+    unsigned char* tmp;
+    tmp = d_in;
+    d_in = d_out;
+    d_out = tmp;
+
+
     cudaFree(d_seam);
   }
   unsigned char *out = new unsigned char[3 * height * target_width];
