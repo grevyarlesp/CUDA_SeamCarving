@@ -467,11 +467,12 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
 
   target_width = X_target_width;
 
+  CHECK(cudaMalloc(&d_seam, sizeof(int) * height));
+
   for (int i = 0, cur_width = target_width; cur_width < X_target_width; ++cur_width, ++i) {
     int increased_width = cur_width + 1;
 
     int *dat = (removed.data() + i * height);
-    int *d_seam;
     CHECK(cudaMemcpy(d_seam, dat, sizeof(int) * height, cudaMemcpyHostToDevice));
 
     dim3 block_size(256);
