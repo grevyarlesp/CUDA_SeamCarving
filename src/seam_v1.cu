@@ -5,9 +5,12 @@
 #include "host.h"
 #include "host_utils.h"
 #include "seam.h"
+#include <vector>
 #include <cassert>
 #include <cstdio>
 #include <iostream>
+
+using std::vector;
 //
 // #define STB_IMAGE_IMPLEMENTATION
 // #include "stb_image.h"
@@ -88,7 +91,7 @@ __global__ void remove_seam_gray(int *d_gray, int *d_seam, int height,
 /*
    Remove seam, with all the removal recorded
    */
-__global__ void remove_seam_record(int *d_gray, int *d_seam, int height,
+__global__ void remove_seam_record(int *d_in, int *d_seam, int height,
                                    int width, int *d_out, int *d_val) {
 
   int row = blockDim.y * blockIdx.y + threadIdx.y;
@@ -110,7 +113,7 @@ __global__ void remove_seam_record(int *d_gray, int *d_seam, int height,
   if (seam_x == col) {
     // removal
     // record
-    d_val[row] = d_gray[pos];
+    d_val[row] = d_in[pos];
     return;
   }
 
@@ -120,7 +123,7 @@ __global__ void remove_seam_record(int *d_gray, int *d_seam, int height,
 
   int target_pos = row * (width - 1) + target_col;
 
-  d_out[target_pos] = d_gray[pos];
+  d_out[target_pos] = d_in[pos];
 }
 
 __global__ void dup_seam_rgb(unsigned char *img, int *d_seam, int height,
@@ -310,8 +313,20 @@ void shrink_image(unsigned char *img, int height, int width, int target_width,
   delete[] gray;
 }
 
+__global__ void assign_kernel(int height, int width, int *d_out) {
+  int row = blockIdx.y * blockDim.y + threadIdx.y;
+  int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (row >= height || col >= width) {
+    return;
+  }
+  int pos = row * width + col;
+  d_out[pos] = col;
+}
+
 void enlarge_image(unsigned char *img, int height, int width, int target_width,
                    unsigned char *out) {
+
   assert(target_width > width);
 
   int X_target_width = target_width;
@@ -327,6 +342,8 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width,
                    cudaMemcpyHostToDevice));
 
   int *d_gray;
+
+  vector<int> removed;
   CHECK(cudaMalloc(&d_gray, sizeof(int) * height * width));
 
   dim3 block_size(1024);
@@ -340,6 +357,16 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width,
 
   int *d_seam;
   CHECK(cudaMalloc(&d_seam, height * sizeof(int)));
+
+  block_size = dim3(32, 32);
+  grid_size = dim3((height - 1) / 32 + 1, (width - 1) / 32 + 1);
+
+  int *d_idx, *d_idx_out, *d_idx_seam;
+  CHECK(cudaMalloc(&d_idx, sizeof(int) * height * width));
+  CHECK(cudaMalloc(&d_idx_out, sizeof(int) * height * width));
+  CHECK(cudaMalloc(&d_idx_seam, sizeof(int) * height));
+
+  assign_kernel<<<grid_size, block_size>>>(height, width, d_idx);
 
   for (int cur_width = width; cur_width > target_width; --cur_width) {
     int reduced_width = cur_width - 1;
@@ -387,6 +414,20 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width,
     remove_seam_rgb<<<grid_size, block_size>>>(d_in, d_seam, height, cur_width,
                                                d_out);
 
+    remove_seam_record<<<grid_size, block_size>>>(d_idx, d_seam, height,
+                                                  cur_width, d_idx_out, d_idx_seam);
+
+    int *idx_seam = new int[height];
+    CHECK(cudaMemcpy(idx_seam, d_idx_seam, height * sizeof(int), cudaMemcpyDeviceToHost));
+
+    for (int i = 0; i < height; ++i) {
+      removed.push_back(idx_seam[i]);
+    }
+
+    d_idx = d_idx_out;
+    int *tmp = d_idx;
+    d_idx_out = d_idx;
+
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
 
@@ -396,6 +437,7 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width,
     delete[] emap;
 
     delete[] seam;
+    delete[] idx_seam;
   }
 
   out = new unsigned char[3 * height * target_width];
@@ -408,19 +450,29 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width,
   CHECK(cudaMemcpy(d_in, img, sizeof(unsigned char) * 3 * height * width,
                    cudaMemcpyHostToDevice));
 
-
-  CHECK(cudaMalloc(&d_out, sizeof(unsigned char) * 3 * height * width));
+  unsigned char *d_out;
+  CHECK(cudaMalloc(&d_out, sizeof(unsigned char) * 3 * height * target_width));
 
   target_width = X_target_width;
 
-  for (int cur_width = target_width; cur_width < X_target_width; ++cur_width) {
+  for (int i = 0, cur_width = target_width; cur_width < X_target_width; ++cur_width, ++i) {
     int increased_width = cur_width + 1;
-    
-  }
 
+    int *dat = (removed.data() + i * height);
+    int *d_seam;
+    CHECK(cudaMemcpy(d_seam, dat, sizeof(int) * height, cudaMemcpyHostToDevice));
+
+    dim3 block_size(256);
+    dim3 grid_size((cur_width - 1) / block_size.x + 1, height);
+    dup_seam_rgb<<<grid_size, block_size>>>(d_in, d_seam, height, width, d_out);
+
+    CHECK(cudaDeviceSynchronize());
+    CHECK(cudaGetLastError());
+    cudaFree(d_seam);
+  }
   CHECK(cudaMemcpy(out, d_in, 3 * height * target_width * sizeof(unsigned char),
                    cudaMemcpyDeviceToHost));
 
-
-
+  CHECK(cudaFree(d_in));
+  CHECK(cudaFree(d_out));
 }

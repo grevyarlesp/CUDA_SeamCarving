@@ -27,7 +27,7 @@ const int SOBEL_Y[] = {
 #define BLOCK_SIZE 32
 
 __global__ void V2_conv_kernel(int *d_in, int height, int width, bool p,
-                                 int *d_out) {
+                               int *d_out) {
 
   // int row =
 
@@ -62,10 +62,6 @@ __global__ void V2_conv_kernel(int *d_in, int height, int width, bool p,
 
   int ans = 0;
 
-  if (pos_o == 599040) {
-    printf("%d %d\n", row_o, col_o);
-  }
-
   if (ty < TILE_SIZE && tx < TILE_SIZE) {
     // +(-1, -1), -(-1, 1), -(0, -1), +(0 ,1), -(1, -1), +(1, 1)
     // +(0,  0) , -(0, 2), -(1, 0),
@@ -86,6 +82,10 @@ __global__ void V2_conv_kernel(int *d_in, int height, int width, bool p,
               2 * N_ds[(ty + 2) * blockDim.x + (tx + 1)] +
               N_ds[(ty + 2) * blockDim.x + (tx + 2)]);
     }
+    if (pos_o == 599040) {
+      printf("%d %d\n", row_o, col_o);
+    }
+
     if (row_o < height && col_o < width) {
       d_out[row_o * width + col_o] = ans;
     }
@@ -121,15 +121,15 @@ void V2_conv(int *in, int height, int width, int *out) {
   dim3 grid_size((height - 1) / TILE_SIZE + 1, (width - 1) / TILE_SIZE + 1);
 
   V2_conv_kernel<<<grid_size, block_size,
-                     BLOCK_SIZE * BLOCK_SIZE * sizeof(int)>>>(d_in, height,
-                                                              width, 0, d_out1);
+                   BLOCK_SIZE * BLOCK_SIZE * sizeof(int)>>>(d_in, height, width,
+                                                            0, d_out1);
 
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
 
   V2_conv_kernel<<<grid_size, block_size,
-                     BLOCK_SIZE * BLOCK_SIZE * sizeof(int)>>>(d_in, height,
-                                                              width, 1, d_out2);
+                   BLOCK_SIZE * BLOCK_SIZE * sizeof(int)>>>(d_in, height, width,
+                                                            1, d_out2);
 
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
@@ -146,8 +146,8 @@ void V2_conv(int *in, int height, int width, int *out) {
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
 
-  CHECK(cudaMemcpy(out, d_out, num_pixels * sizeof(int),
-                   cudaMemcpyDeviceToHost));
+  CHECK(
+      cudaMemcpy(out, d_out, num_pixels * sizeof(int), cudaMemcpyDeviceToHost));
 
   CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_out));
