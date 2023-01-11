@@ -334,7 +334,6 @@ __global__ void dup_seam_rgb(unsigned char *img, int *d_seam, int height,
     target_col = col + 1;
   }
 
-  printf("%d ", seam_x);
 
   // increase width width
   int target_pos = row * (width + 1) + target_col;
