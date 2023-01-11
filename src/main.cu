@@ -491,10 +491,8 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
           add_ext(path, std::to_string(target_width) + "_" +
                             std::to_string(cur_width) + "_seam");
 
-      CHECK(cudaMemcpy(out_seam, d_in, 3 * height * cur_width,
+      CHECK(cudaMemcpy(out_seam, d_out, 3 * height * increased_width,
                        cudaMemcpyDeviceToHost));
-
-      host_highlight_seam(out_seam, height, cur_width, seam);
 
       stbi_write_png(out_path.c_str(), cur_width, height, 3, out_seam,
                      cur_width * 3);
