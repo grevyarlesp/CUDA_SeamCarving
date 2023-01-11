@@ -488,7 +488,7 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
     {
       unsigned char *out_seam = new unsigned char[height * cur_width * 3];
       std::string out_path =
-          add_ext(path, std::to_string(target_width) + "_" +
+          add_ext(in_path, std::to_string(target_width) + "_" +
                             std::to_string(cur_width) + "_seam");
 
       CHECK(cudaMemcpy(out_seam, d_out, 3 * height * increased_width,
