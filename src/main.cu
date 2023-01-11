@@ -1,8 +1,8 @@
 #include "gpu_utils.h"
 #include "host_utils.h"
+#include "seam.h"
 #include <cstdio>
 #include <iostream>
-#include "seam.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -27,8 +27,7 @@ int main(int argc, char **argv) {
        << channels << '\n';
   cout << "Target Width = " << target_width << '\n';
 
-
-  unsigned char* out;
+  unsigned char *out;
   if (target_width < width) {
 
     cout << "Shrinking to = " << target_width << '\n';
@@ -36,5 +35,10 @@ int main(int argc, char **argv) {
     shrink_image(img, height, width, target_width, out);
   } else {
     // enlarge
+
+    out = new unsigned char[3 * height * target_width];
+
+    enlarge_image(img, height, width, target_width, out);
   }
+  std::string out_path = add_ext(in_path, std::to_string(target_width));
 }

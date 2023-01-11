@@ -92,7 +92,9 @@ void rand_test(int ver, int HEIGHT = 128, int WIDTH = 128, int num = 2) {
     }
     int mx = *std::max_element(A, A + HEIGHT * WIDTH);
     int mn = *std::min_element(A, A + HEIGHT * WIDTH);
+
     cout << "Max " << mx << ' ' << "Min " <<  ' ' << mn << '\n';
+
     if (ver == 1)
       V1_conv(A, HEIGHT, WIDTH, gpu_ans);
     else if (ver == 2)

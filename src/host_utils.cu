@@ -9,6 +9,10 @@ bool check_answer(int *act, int *expected, int n, int ncase) {
   for (int i = 0; i < n; ++i) {
     if (act[i] != expected[i]) {
       b = false;
+      cout << "DIff at " << i << " : " << '\n';
+      cout << "Actual = " << act[i] << '\n';
+      cout << "Expected = " << expected[i] << '\n';
+        return false;
       break;
     }
   }
