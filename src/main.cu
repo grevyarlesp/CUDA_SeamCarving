@@ -486,6 +486,7 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
 
 #ifdef EN_DEBUG
     {
+      cerr << cur_width << '\n';
       unsigned char *out_seam = new unsigned char[height * cur_width * 3];
       std::string out_path =
           add_ext(in_path, std::to_string(target_width) + "_" +
