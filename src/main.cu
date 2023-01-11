@@ -482,6 +482,28 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
 
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaGetLastError());
+
+
+#ifdef EN_DEBUG
+    {
+      unsigned char *out_seam = new unsigned char[height * cur_width * 3];
+      std::string out_path =
+          add_ext(path, std::to_string(target_width) + "_" +
+                            std::to_string(cur_width) + "_seam");
+
+      CHECK(cudaMemcpy(out_seam, d_in, 3 * height * cur_width,
+                       cudaMemcpyDeviceToHost));
+
+      host_highlight_seam(out_seam, height, cur_width, seam);
+
+      stbi_write_png(out_path.c_str(), cur_width, height, 3, out_seam,
+                     cur_width * 3);
+
+      delete[] out_seam;
+    };
+#endif
+
+
     unsigned char* tmp;
     tmp = d_in;
     d_in = d_out;
