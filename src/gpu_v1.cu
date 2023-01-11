@@ -11,7 +11,9 @@ const int SOBEL_X[] = {
 
 const int SOBEL_Y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
-__constant__ int kern[9];
+__constant__ int SOBEL_X_K[9];
+
+__constant__ int SOBEL_Y_K[9];
 
 #define TILE_DIM 32
 
@@ -72,9 +74,22 @@ __global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, 
   int k = row * pitch + col;
   int j = threadIdx.x + 1;
   int i = threadIdx.y + 1;
+  int di = 1;
   if (row >= 0 && row < h && col >= 0 && col < w)
   {
     s_in[i * S_WIDTH + j] = in[k];
+
+    if (threadIdx.x == 0 && threadIdx.y == 0 && row !=0 && col != 0)
+      s_in[threadIdx.x] = in[k - pitch - 1];
+
+    if (threadIdx.x == blockDim.x - 1 && threadIdx.y == blockDim.y - 1 && row != w - 1 && col != 0)
+      s_in[(blockDim.y + 1)*S_WIDTH + blockDim.x + 1] = in[k + pitch + 1];
+
+    if (threadIdx.x == blockDim.x - 1 && threadIdx.y == 0 && row != 0 && col != w - 1)
+      s_in[blockDim.x + 1] = in[k - pitch + 1];
+
+    if (threadIdx.x == 0 && threadIdx.y == blockDim.y - 1 && row != w - 1 && col != 0)
+      s_in[(blockDim.y + 1)*S_WIDTH + threadIdx.x] = in[k + pitch - 1];
 
     if (threadIdx.x == 0 && col != 0)
     {
@@ -90,7 +105,6 @@ __global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, 
     }
     if (threadIdx.y == blockDim.y - 1 && row != h - 1)
     { 
-
       s_in[(blockDim.y + 1)*S_WIDTH + j] = in[k+pitch];
     }
   }
@@ -100,19 +114,72 @@ __global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, 
   int iy = 0;
   k = row * en_pitch + col;
   if ((row > 0) && (row < h - 1) && (col > 0) && (col < w - 1))
-  {      
-    ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
-    iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
+  {
+    for (int a = 0; a < 3; ++a)
+    {
+      for (int b = 0; b < 3; ++b)
+      {
+        int ki = a * 3 + b;
+        int x = j - di + b;
+        int y = i - di + a;
+        ix += SOBEL_X_K[ki] * s_in[y * S_WIDTH + x];
+        iy += SOBEL_Y_K[ki] * s_in[y * S_WIDTH + x];
+      }
+    }
+    // ix += s_in[i * S_WIDTH + j - 1] - s_in[i * S_WIDTH + j + 1];
+    // iy += s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
   }
   else if (row == 0 || row == h - 1)
   {
-    ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
+    if (row == 0)
+      for (int a = 1; a < 3; a++)
+        for (int b = 0; b < 3; b++)
+        {
+          int ki = a * 3 + b;
+          int x = j - di + b;
+          int y = i - di + a;
+          ix += SOBEL_X_K[ki] * s_in[y * S_WIDTH + x];
+        }
+    else
+      for (int a = 0; a < 2; a++)
+        for (int b = 0; b < 3; b++)
+        {
+          int ki = a * 3 + b;
+          int x = j - di + b;
+          int y = i - di + a;
+          ix += SOBEL_X_K[ki] * s_in[y * S_WIDTH + x];
+        }
+    //ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
   }
   else if (col == 0 || col == w - 1)
   {
-    iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
+    if (col == 0)
+      for (int a = 0; a < 3; a++)
+        for (int b = 1; b < 3; b++)
+        {
+          int ki = a * 3 + b;
+          int x = j - di + b;
+          int y = i - di + a;
+          iy += SOBEL_Y_K[ki] * s_in[y * S_WIDTH + x];
+        }
+    else
+      for (int a = 0; a < 3; a++)
+        for (int b = 0; b < 2; b++)
+        {
+          int ki = a * 3 + b;
+          int x = j - di + b;
+          int y = i - di + a;
+          iy += SOBEL_Y_K[ki] * s_in[y * S_WIDTH + x];
+        }
+    //iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
   }
-  out[k] = 0.5*(abs(ix) + abs(iy));
+  int res = sqrtf(ix * ix + iy * iy);
+  if (res < 0)
+    res = 0;
+  if (res > 255)
+    res = 255;
+  out[k] = res;
+  //out[k] = 0.5*(abs(ix) + abs(iy));
 }
 
 void Test_conv(int *in, int height, int width, int *out)
@@ -123,6 +190,8 @@ void Test_conv(int *in, int height, int width, int *out)
   CHECK(cudaMallocPitch(&d_in, &pitch, width * sizeof(int), height));
   CHECK(cudaMallocPitch(&d_out, &en_pitch, width*sizeof(int), height));
   CHECK(cudaMemcpy2D(d_in, pitch, in, width * sizeof(int), width * sizeof(int), height, cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpyToSymbol(SOBEL_X_K, SOBEL_X, 9 * sizeof(int)));
+  CHECK(cudaMemcpyToSymbol(SOBEL_Y_K, SOBEL_Y, 9 * sizeof(int)));
   dim3 blockSize(S_WIDTH - 2, S_HEIGHT - 2);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
   Test_conv_kernel<<<gridSize, blockSize>>>(d_in, pitch/sizeof(int), en_pitch/sizeof(int), width, height, d_out);
