@@ -33,12 +33,17 @@ int main(int argc, char **argv) {
     cout << "Shrinking to = " << target_width << '\n';
     out = new unsigned char[3 * height * target_width];
     shrink_image(img, height, width, target_width, out);
-  } else {
+  } else if (target_width > width) {
     // enlarge
-
     out = new unsigned char[3 * height * target_width];
-
     enlarge_image(img, height, width, target_width, out);
+  } else {
+    cout << "Equal, doing nothing:";
+    return 0;
   }
   std::string out_path = add_ext(in_path, std::to_string(target_width));
+
+  stbi_write_png(out_path.c_str(), target_width, height, 3, out,
+                 target_width * 3);
+  return 0;
 }
