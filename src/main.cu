@@ -469,7 +469,7 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
 
   CHECK(cudaMalloc(&d_seam, sizeof(int) * height));
 
-  for (int i = 0, cur_width = target_width; cur_width < X_target_width; ++cur_width, ++i) {
+  for (int i = 0, cur_width = width; cur_width < X_target_width; ++cur_width, ++i) {
     int increased_width = cur_width + 1;
 
     int *dat = (removed.data() + i * height);
