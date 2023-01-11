@@ -307,12 +307,12 @@ __global__ void assign_kernel(int height, int width, int *d_out) {
 }
 
 __global__ void dup_seam_rgb(unsigned char *img, int *d_seam, int height,
-                             int width, unsigned char *d_out) {
+                             int increased_width, unsigned char *d_out) {
 
   int row = blockDim.y * blockIdx.y + threadIdx.y;
   int col = blockDim.x * blockIdx.x + threadIdx.x;
 
-  if (col >= width || row >= height)
+  if (col >= increased_width || row >= height)
     return;
 
   __shared__ int seam_x;
@@ -321,26 +321,26 @@ __global__ void dup_seam_rgb(unsigned char *img, int *d_seam, int height,
     seam_x = d_seam[row];
   __syncthreads();
 
-  int pos = row * width + col;
+  int pos = row * increased_width + col;
 
-  int target_col = col;
+  int dat_col = col;
 
-  if (seam_x == col) {
-    target_col = col;
+  if (col == seam_x || col == seam_x + 1) {
+    dat_col = col;
+
   }
 
-
   if (col > seam_x) {
-    target_col = col + 1;
+    dat_col = col - 1;
   }
 
 
   // increase width width
-  int target_pos = row * (width + 1) + target_col;
+  int dat_pos = row * (increased_width -1) + dat_col;
 
-  d_out[target_pos * 3] = img[pos * 3];
-  d_out[target_pos * 3 + 1] = img[pos * 3 + 1];
-  d_out[target_pos * 3 + 2] = img[pos * 3 + 2];
+  d_out[pos * 3] = img[dat_pos * 3];
+  d_out[pos * 3 + 1] = img[dat_pos * 3 + 1];
+  d_out[pos * 3 + 2] = img[dat_pos * 3 + 2];
 }
 
 void enlarge_image(unsigned char *img, int height, int width, int target_width, std::string in_path) {
@@ -466,12 +466,12 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
   CHECK(cudaMemcpy(d_in, img, sizeof(unsigned char) * 3 * height * width,
                    cudaMemcpyHostToDevice));
 
-  unsigned char *d_out;
 
   target_width = X_target_width;
 
-  CHECK(cudaMalloc(&d_out, sizeof(unsigned char) * 3 * height * target_width));
 
+  unsigned char *d_out;
+  CHECK(cudaMalloc(&d_out, sizeof(unsigned char) * 3 * height * target_width));
   CHECK(cudaMalloc(&d_seam, sizeof(int) * height));
 
   for (int i = 0, cur_width = width; cur_width < X_target_width; ++cur_width, ++i) {
@@ -500,7 +500,7 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
       CHECK(cudaMemcpy(out_seam, d_out, 3 * height * increased_width,
                        cudaMemcpyDeviceToHost));
 
-      stbi_write_png(out_path.c_str(), cur_width, height, 3, out_seam,
+      stbi_write_png(out_path.c_str(), increased_width, height, 3, out_seam,
                      cur_width * 3);
 
       delete[] out_seam;
