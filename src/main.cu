@@ -487,8 +487,6 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
     d_in = d_out;
     d_out = tmp;
 
-
-    cudaFree(d_seam);
   }
   unsigned char *out = new unsigned char[3 * height * target_width];
   CHECK(cudaMemcpy(out, d_in, 3 * height * target_width * sizeof(unsigned char),
@@ -503,6 +501,7 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
 
   CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_out));
+  CHECK(cudaFree(d_seam));
 }
 
 int main(int argc, char **argv) {
