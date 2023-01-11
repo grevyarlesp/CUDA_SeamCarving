@@ -465,9 +465,10 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
                    cudaMemcpyHostToDevice));
 
   unsigned char *d_out;
-  CHECK(cudaMalloc(&d_out, sizeof(unsigned char) * 3 * height * target_width));
 
   target_width = X_target_width;
+
+  CHECK(cudaMalloc(&d_out, sizeof(unsigned char) * 3 * height * target_width));
 
   CHECK(cudaMalloc(&d_seam, sizeof(int) * height));
 
