@@ -459,6 +459,7 @@ void enlarge_image(unsigned char *img, int height, int width, int target_width, 
   }
 
   CHECK(cudaFree(d_seam));
+  CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_gray));
   delete[] gray;
 
