@@ -5,6 +5,7 @@
 #include "gpu_v2.h"
 #include "host.h"
 #include "host_utils.h"
+
 #include <cstdio>
 #include <iostream>
 
@@ -14,6 +15,7 @@
 #include "stb_image_write.h"
 
 using std::cout;
+using std::cerr;
 using std::vector;
 
 /*
