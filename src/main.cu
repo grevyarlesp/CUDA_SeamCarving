@@ -523,6 +523,6 @@ int main(int argc, char **argv) {
     shrink_image(img, height, width, target_width, in_path);
   } else if (target_width > width) {
     // enlarge
-    
+    enlarge_image(img, height, width, target_width, in_path);
   }
 }
