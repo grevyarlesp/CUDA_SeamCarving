@@ -62,6 +62,10 @@ __global__ void V2_conv_kernel(int *d_in, int height, int width, bool p,
 
   int ans = 0;
 
+  if (pos_o == 599040) {
+    printf("%d %d\n", row_o, col_o);
+  }
+
   if (ty < TILE_SIZE && tx < TILE_SIZE) {
     // +(-1, -1), -(-1, 1), -(0, -1), +(0 ,1), -(1, -1), +(1, 1)
     // +(0,  0) , -(0, 2), -(1, 0),
