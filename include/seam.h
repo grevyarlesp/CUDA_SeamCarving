@@ -3,7 +3,6 @@
 
 #include <string>
 
-void shrink_image(unsigned char *img, int height, int width, int target_width,
-                  std::string path);
+void shrink_image(unsigned char *img, int height, int width, int target_width, unsigned char* out);
 
 #endif

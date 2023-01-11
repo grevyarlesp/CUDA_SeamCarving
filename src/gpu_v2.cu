@@ -24,7 +24,6 @@ __global__ void V2_grayscale_kernel(unsigned char *d_in, int num_pixels,
    Split into n_Stream parts
    */
 
-__global__ void V2_conv_kernel(int *d_in, int height, int width, int *d_out) {}
 
 __device__ int bCount;
 __device__ int* flag;

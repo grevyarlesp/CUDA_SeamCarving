@@ -64,34 +64,29 @@ __global__ void V1_conv_kernel(int *in, int w, int h, int *out) {
 #define S_WIDTH 66
 #define S_HEIGHT 10
 
-__global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, int h, int *out)
-{
+__global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w,
+                                 int h, int *out) {
   __shared__ int s_in[S_WIDTH * S_HEIGHT];
   int row = blockIdx.y * blockDim.y + threadIdx.y;
   int col = blockIdx.x * blockDim.x + threadIdx.x;
   int k = row * pitch + col;
   int j = threadIdx.x + 1;
   int i = threadIdx.y + 1;
-  if (row >= 0 && row < h && col >= 0 && col < w)
-  {
+  if (row >= 0 && row < h && col >= 0 && col < w) {
     s_in[i * S_WIDTH + j] = in[k];
 
-    if (threadIdx.x == 0 && col != 0)
-    {
-      s_in[i * S_WIDTH] = in[k-1];
+    if (threadIdx.x == 0 && col != 0) {
+      s_in[i * S_WIDTH] = in[k - 1];
     }
-    if (threadIdx.x == blockDim.x - 1 && col != w - 1)
-    {
-      s_in[i * S_WIDTH + blockDim.x + 1] = in[k+1];
+    if (threadIdx.x == blockDim.x - 1 && col != w - 1) {
+      s_in[i * S_WIDTH + blockDim.x + 1] = in[k + 1];
     }
-    if (threadIdx.y == 0 && row != 0)
-    {
-      s_in[j] = in[k-pitch];
+    if (threadIdx.y == 0 && row != 0) {
+      s_in[j] = in[k - pitch];
     }
-    if (threadIdx.y == blockDim.y - 1 && row != h - 1)
-    { 
+    if (threadIdx.y == blockDim.y - 1 && row != h - 1) {
 
-      s_in[(blockDim.y + 1)*S_WIDTH + j] = in[k+pitch];
+      s_in[(blockDim.y + 1) * S_WIDTH + j] = in[k + pitch];
     }
   }
   __syncthreads();
@@ -99,40 +94,36 @@ __global__ void Test_conv_kernel(int *in, size_t pitch, size_t en_pitch, int w, 
   int ix = 0;
   int iy = 0;
   k = row * en_pitch + col;
-  if ((row > 0) && (row < h - 1) && (col > 0) && (col < w - 1))
-  {      
+  if ((row > 0) && (row < h - 1) && (col > 0) && (col < w - 1)) {
     ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
     iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
-  }
-  else if (row == 0 || row == h - 1)
-  {
+  } else if (row == 0 || row == h - 1) {
     ix = s_in[i * S_WIDTH + j + 1] - s_in[i * S_WIDTH + j - 1];
-  }
-  else if (col == 0 || col == w - 1)
-  {
+  } else if (col == 0 || col == w - 1) {
     iy = s_in[(i + 1) * S_WIDTH + j] - s_in[(i - 1) * S_WIDTH + j];
   }
-  out[k] = 0.5*(abs(ix) + abs(iy));
+  out[k] = 0.5 * (abs(ix) + abs(iy));
 }
 
-void Test_conv(int *in, int height, int width, int *out)
-{
+void Test_conv(int *in, int height, int width, int *out) {
   size_t pitch;
   size_t en_pitch;
-  int* d_in, *d_out;
+  int *d_in, *d_out;
   CHECK(cudaMallocPitch(&d_in, &pitch, width * sizeof(int), height));
-  CHECK(cudaMallocPitch(&d_out, &en_pitch, width*sizeof(int), height));
-  CHECK(cudaMemcpy2D(d_in, pitch, in, width * sizeof(int), width * sizeof(int), height, cudaMemcpyHostToDevice));
+  CHECK(cudaMallocPitch(&d_out, &en_pitch, width * sizeof(int), height));
+  CHECK(cudaMemcpy2D(d_in, pitch, in, width * sizeof(int), width * sizeof(int),
+                     height, cudaMemcpyHostToDevice));
   dim3 blockSize(S_WIDTH - 2, S_HEIGHT - 2);
   dim3 gridSize((width - 1) / blockSize.x + 1, (height - 1) / blockSize.y + 1);
-  Test_conv_kernel<<<gridSize, blockSize>>>(d_in, pitch/sizeof(int), en_pitch/sizeof(int), width, height, d_out);
+  Test_conv_kernel<<<gridSize, blockSize>>>(
+      d_in, pitch / sizeof(int), en_pitch / sizeof(int), width, height, d_out);
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
-  CHECK(cudaMemcpy2D(out, width*sizeof(int), d_out, en_pitch, width*sizeof(int), height, cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy2D(out, width * sizeof(int), d_out, en_pitch,
+                     width * sizeof(int), height, cudaMemcpyDeviceToHost));
   cudaFree(d_in);
   cudaFree(d_out);
 }
-
 
 // __inline__ __device__ void warpReduceMin(int& val, int& idx)
 // {
@@ -283,7 +274,8 @@ void V1_conv(int *in, int height, int width, int *out, int block_size) {
   V1_sum<<<gridSize, blockSize>>>(d_temp1, d_temp2, width, height, d_out);
   CHECK(cudaDeviceSynchronize());
   CHECK(cudaGetLastError());
-  CHECK(cudaMemcpy(out, d_out, width * height * sizeof(int), cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy(out, d_out, width * height * sizeof(int),
+                   cudaMemcpyDeviceToHost));
   CHECK(cudaFree(d_in));
   CHECK(cudaFree(d_temp1));
   CHECK(cudaFree(d_temp2));
@@ -413,5 +405,3 @@ double V1_seam(int *in, int height, int width, int *out, int blocksize) {
 
   return timer.Elapsed();
 }
-
-

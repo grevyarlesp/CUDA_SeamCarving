@@ -27,10 +27,13 @@ int main(int argc, char **argv) {
        << channels << '\n';
   cout << "Target Width = " << target_width << '\n';
 
+
+  unsigned char* out;
   if (target_width < width) {
 
     cout << "Shrinking to = " << target_width << '\n';
-    shrink_image(img, height, width, target_width, in_path);
+    out = new unsigned char[3 * height * target_width];
+    shrink_image(img, height, width, target_width, out);
   } else {
     // enlarge
   }

@@ -2,6 +2,7 @@
 #include "gpu_v1.h"
 #include "host.h"
 #include "host_utils.h"
+#include "conv.h"
 #include <algorithm>
 #include <cstdlib>
 
@@ -61,6 +62,8 @@ void gpu_test(int ver) {
     if (ver == 1)
       V1_conv(V.data(), s.H, s.W, act);
     else if (ver == 2) 
+      V2_conv(V.data(), s.H, s.W, act);
+    else
       Test_conv(V.data(), s.H, s.W, act);
 
     check_answer(act, ans[i].data(), s.H * s.W, i);
@@ -93,7 +96,10 @@ void rand_test(int ver, int HEIGHT = 128, int WIDTH = 128, int num = 2) {
     if (ver == 1)
       V1_conv(A, HEIGHT, WIDTH, gpu_ans);
     else if (ver == 2)
+      V2_conv(A, HEIGHT, WIDTH, gpu_ans);
+    else
       Test_conv(A, HEIGHT, WIDTH, gpu_ans);
+
 
     host_sobel_conv(A, HEIGHT, WIDTH, host_ans);
 
