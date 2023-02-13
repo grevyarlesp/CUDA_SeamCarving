@@ -1,6 +1,5 @@
 // Generating answers for big test cases
-// Using the GPU to generate for certain parts
-#include "gpu_utils.h"
+// Using the GPU to generate for certain parts #include "gpu_utils.h"
 #include "gpu_v1.h"
 #include "gpu_v1_1.h"
 #include "gpu_v1_2.h"
